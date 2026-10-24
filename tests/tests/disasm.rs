@@ -1,15 +1,15 @@
-//! raw's own disassemblers: disassemble, assemble the text again,
+//! rat's own disassemblers: disassemble, assemble the text again,
 //! disassemble the result; both texts must agree.
 
-use raw_asm::{assemble, disassemble, MemVfs, Options};
+use rat_asm::{assemble, disassemble, MemVfs, Options};
 
 const ORG: u32 = 0x1000;
 
 fn asm(cpu: &str, text: &str, prelude: &str) -> Result<Vec<u8>, String> {
     let src = format!(".cpu {cpu}\n.org ${ORG:x}\n{prelude}\n    {text}\n");
     let mut vfs = MemVfs::new();
-    vfs.add("t.rsm", src.as_bytes());
-    let r = assemble(&Options { main: "t.rsm".into(), format: Some("bin".into()), ..Default::default() }, &vfs);
+    vfs.add("t.rat", src.as_bytes());
+    let r = assemble(&Options { main: "t.rat".into(), format: Some("bin".into()), ..Default::default() }, &vfs);
     if !r.ok {
         return Err(r.diagnostics.iter().map(|d| d.message.clone()).collect::<Vec<_>>().join("; "));
     }
@@ -27,7 +27,7 @@ fn check(cpu: &str, cases: impl Iterator<Item = Vec<u8>>, prelude: &str, wide: b
     let mut n = 0;
     for b in cases {
         let Some(text) = first(cpu, &b, wide) else { continue };
-        // equivalent forms raw writes differently: `0,x` -> `,x`,
+        // equivalent forms rat writes differently: `0,x` -> `,x`,
         // `or.w #n,dn` -> `ori.w #n,dn`
         let (m, rest) = text.split_once(' ').unwrap_or((&text, ""));
         if text.contains(" $0,") || ["or.", "and.", "sub.", "add.", "cmp.", "eor."].iter().any(|p| m.starts_with(p)) && rest.starts_with('#') {

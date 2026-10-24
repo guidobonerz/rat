@@ -1,20 +1,20 @@
 //! Round trips against mimic: every opcode is disassembled by mimic, the
-//! text is assembled by raw, and raw's bytes must disassemble (by mimic)
+//! text is assembled by rat, and rat's bytes must disassemble (by mimic)
 //! to the same text. Comparing text accepts equivalent encodings (the
 //! documented NOP for an undocumented one, a 5-bit 6809 offset for an
 //! 8-bit one, ...).
 
 use emu_core::{Bus, Cpu, Size};
-use raw_asm::{assemble, MemVfs, Options};
+use rat_asm::{assemble, MemVfs, Options};
 
 const ORG: u32 = 0x1000;
 
-/// Assemble one instruction with raw (raw dialect).
-fn raw(cpu: &str, text: &str, prelude: &str) -> Result<Vec<u8>, String> {
+/// Assemble one instruction with rat (rat dialect).
+fn rat(cpu: &str, text: &str, prelude: &str) -> Result<Vec<u8>, String> {
     let src = format!(".cpu {cpu}\n.org ${ORG:x}\n{prelude}\n    {text}\n");
     let mut vfs = MemVfs::new();
-    vfs.add("t.rsm", src.as_bytes());
-    let opts = Options { main: "t.rsm".into(), format: Some("bin".into()), ..Default::default() };
+    vfs.add("t.rat", src.as_bytes());
+    let opts = Options { main: "t.rat".into(), format: Some("bin".into()), ..Default::default() };
     let r = assemble(&opts, &vfs);
     if !r.ok {
         return Err(r.diagnostics.iter().map(|d| d.message.clone()).collect::<Vec<_>>().join("; "));
@@ -38,7 +38,7 @@ impl Report {
 
     fn check(&mut self, what: &str, text: &str, prelude: &str, cpu: &str, redis: impl Fn(&[u8]) -> String) {
         self.tested += 1;
-        match raw(cpu, text, prelude) {
+        match rat(cpu, text, prelude) {
             Ok(bytes) => {
                 let back = redis(&bytes);
                 if norm(&back) != norm(text) {
@@ -232,7 +232,7 @@ impl Bus for Mem68 {
     }
 }
 
-/// mimic writes unsized Bcc for the word form; raw would pick `.s`.
+/// mimic writes unsized Bcc for the word form; rat would pick `.s`.
 fn m68k_text(t: &str) -> String {
     let (m, rest) = t.split_once(' ').unwrap_or((t, ""));
     let is_branch = m.starts_with('B') && !m.contains('.') && !matches!(m, "BTST" | "BCHG" | "BCLR" | "BSET" | "BKPT") && !m.starts_with("BF");
@@ -244,13 +244,13 @@ fn m68k_text(t: &str) -> String {
 }
 
 /// Encodings mimic decodes but no assembler should produce: byte
-/// operations on address registers, immediate forms that raw writes as
+/// operations on address registers, immediate forms that rat writes as
 /// ORI/ANDI/... (equivalent, different opcode).
 fn invalid_68k(t: &str) -> bool {
     let (m, rest) = t.split_once(' ').unwrap_or((t, ""));
     let byte_an = m.ends_with(".B") && (rest.starts_with('A') || rest.contains(",A")) && rest.as_bytes().get(1).is_some_and(u8::is_ascii_digit);
     let imm_arith = ["OR.", "AND.", "SUB.", "ADD.", "CMP.", "EOR."].iter().any(|p| m.starts_with(p)) && rest.starts_with('#');
-    // memory shifts with a data register (raw reads `asr.w d1` as `#1,d1`)
+    // memory shifts with a data register (rat reads `asr.w d1` as `#1,d1`)
     let mem_shift_dn = ["AS", "LS", "ROX", "RO"].iter().any(|p| m.starts_with(p)) && !rest.contains(',') && rest.starts_with('D');
     byte_an || imm_arith || mem_shift_dn
 }

@@ -2,13 +2,13 @@
 //! (`tests/corpus/expected`), and converting it to each dialect and
 //! assembling again gives the same bytes.
 //!
-//! Run with `RAW_BLESS=1` to (re)write the golden files after checking
+//! Run with `RAT_BLESS=1` to (re)write the golden files after checking
 //! the output by hand.
 
 use std::path::Path;
 
-use raw_asm::{assemble, convert, FsVfs, MemVfs, Options, Vfs};
-use raw_core::Dialect;
+use rat_asm::{assemble, convert, FsVfs, MemVfs, Options, Vfs};
+use rat_core::Dialect;
 
 const DIR: &str = "corpus";
 
@@ -33,7 +33,7 @@ fn main_output(opts: &Options, vfs: &dyn Vfs) -> Result<Vec<u8>, String> {
 
 #[test]
 fn corpus_matches_golden_files() {
-    let bless = std::env::var_os("RAW_BLESS").is_some();
+    let bless = std::env::var_os("RAT_BLESS").is_some();
     let mut failures = Vec::new();
     for name in sources() {
         let opts = Options { main: format!("{DIR}/{name}"), ..Default::default() };
@@ -52,7 +52,7 @@ fn corpus_matches_golden_files() {
         match std::fs::read(&golden) {
             Ok(g) if g == data => {}
             Ok(g) => failures.push(format!("{name}: output differs from {} ({} vs {} bytes)", golden.display(), data.len(), g.len())),
-            Err(_) => failures.push(format!("{name}: missing golden file {} (run with RAW_BLESS=1)", golden.display())),
+            Err(_) => failures.push(format!("{name}: missing golden file {} (run with RAT_BLESS=1)", golden.display())),
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
@@ -94,7 +94,7 @@ fn corpus_converts_to_every_dialect() {
             let ext = match to {
                 Dialect::Acme => "a",
                 Dialect::Kick => "asm",
-                Dialect::Raw => "rsm",
+                Dialect::Rat => "rat",
             };
             let mut vfs = MemVfs::new();
             for f in std::fs::read_dir(DIR).unwrap().filter_map(|e| e.ok()) {
@@ -118,15 +118,15 @@ fn corpus_converts_to_every_dialect() {
 #[test]
 fn platform_features_are_gated() {
     let mut vfs = MemVfs::new();
-    vfs.add("a.rsm", ".platform nes\n.var s = LoadSid(\"x.sid\")\n.basicupstart start\nstart: rts\n");
-    let r = assemble(&Options { main: "a.rsm".into(), ..Default::default() }, &vfs);
+    vfs.add("a.rat", ".platform nes\n.var s = LoadSid(\"x.sid\")\n.basicupstart start\nstart: rts\n");
+    let r = assemble(&Options { main: "a.rat".into(), ..Default::default() }, &vfs);
     let msgs: Vec<&str> = r.diagnostics.iter().map(|d| d.message.as_str()).collect();
     assert!(msgs.iter().any(|m| m.contains("LoadSid") && m.contains(".platform c64")), "{msgs:?}");
     assert!(msgs.iter().any(|m| m.contains("basicupstart") && m.contains("current platform: nes")), "{msgs:?}");
 
     let mut vfs = MemVfs::new();
-    vfs.add("b.rsm", ".platform nes\nrts\n");
-    let r = assemble(&Options { main: "b.rsm".into(), format: Some("prg".into()), ..Default::default() }, &vfs);
+    vfs.add("b.rat", ".platform nes\nrts\n");
+    let r = assemble(&Options { main: "b.rat".into(), format: Some("prg".into()), ..Default::default() }, &vfs);
     assert!(r.diagnostics.iter().any(|d| d.message.contains("not available on platform nes")));
 }
 
@@ -146,11 +146,11 @@ fn dialect_is_detected_from_directive_flag_and_extension() {
 #[test]
 fn errors_point_at_the_source() {
     let mut vfs = MemVfs::new();
-    vfs.add("e.rsm", "    nop\n    lda #$1000\n    bne far\n.org $2000\nfar: rts\n");
-    let r = assemble(&Options { main: "e.rsm".into(), ..Default::default() }, &vfs);
+    vfs.add("e.rat", "    nop\n    lda #$1000\n    bne far\n.org $2000\nfar: rts\n");
+    let r = assemble(&Options { main: "e.rat".into(), ..Default::default() }, &vfs);
     assert!(!r.ok);
     let text = r.render_diagnostics(false);
-    assert!(text.contains("e.rsm:2:"), "{text}");
+    assert!(text.contains("e.rat:2:"), "{text}");
     assert!(text.contains("immediate value out of range"), "{text}");
     assert!(text.contains("branch out of range"), "{text}");
 }

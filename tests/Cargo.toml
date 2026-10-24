@@ -1,6 +1,6 @@
 [package]
-name = "raw-tests"
-description = "raw: integration tests (round trips against mimic's disassemblers, corpus)"
+name = "rat-tests"
+description = "rat: integration tests (round trips against mimic's disassemblers, corpus)"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
@@ -9,8 +9,8 @@ publish.workspace = true
 workspace = true
 
 [dev-dependencies]
-raw-asm.workspace = true
-raw-core.workspace = true
+rat-asm.workspace = true
+rat-core.workspace = true
 emu-core = { path = "../../mimic/crates/emu-core" }
 cpu-6502 = { path = "../../mimic/crates/cpu-6502" }
 cpu-65816 = { path = "../../mimic/crates/cpu-65816" }

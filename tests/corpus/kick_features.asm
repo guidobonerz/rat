@@ -49,6 +49,6 @@ inner:  .byte $42
         .fill music.size, music.getData(i)
 .assert "double", double(2), 4
 .print "size=" + music.size + " name=" + music.name
-.disk [filename="test.d64", name="RAW DISK", id="21"] {
+.disk [filename="test.d64", name="RAT DISK", id="21"] {
     [name="MAIN", type="prg", segments="Default,Code,Data"],
 }

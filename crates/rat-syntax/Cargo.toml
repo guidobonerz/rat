@@ -1,0 +1,13 @@
+[package]
+name = "rat-syntax"
+description = "rat: ACME, KickAssembler and rat dialect front ends"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rat-core.workspace = true
+rat-cpu.workspace = true

@@ -880,75 +880,75 @@ dependencies = [
 ]
 
 [[package]]
-name = "raw-asm"
+name = "rat-asm"
 version = "0.1.0"
 dependencies = [
  "indexmap",
- "raw-core",
- "raw-cpu",
- "raw-output",
- "raw-platform",
- "raw-syntax",
+ "rat-core",
+ "rat-cpu",
+ "rat-output",
+ "rat-platform",
+ "rat-syntax",
  "serde",
 ]
 
 [[package]]
-name = "raw-cli"
+name = "rat-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
- "raw-asm",
- "raw-core",
- "raw-cpu",
- "raw-output",
- "raw-platform",
- "raw-server",
+ "rat-asm",
+ "rat-core",
+ "rat-cpu",
+ "rat-output",
+ "rat-platform",
+ "rat-server",
  "serde_json",
 ]
 
 [[package]]
-name = "raw-core"
+name = "rat-core"
 version = "0.1.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
-name = "raw-cpu"
+name = "rat-cpu"
 version = "0.1.0"
 dependencies = [
- "raw-core",
+ "rat-core",
  "serde",
 ]
 
 [[package]]
-name = "raw-output"
+name = "rat-output"
 version = "0.1.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
-name = "raw-platform"
+name = "rat-platform"
 version = "0.1.0"
 dependencies = [
  "image",
- "raw-output",
+ "rat-output",
  "serde",
 ]
 
 [[package]]
-name = "raw-server"
+name = "rat-server"
 version = "0.1.0"
 dependencies = [
  "axum",
  "base64",
  "http-body-util",
- "raw-asm",
- "raw-core",
- "raw-cpu",
- "raw-output",
- "raw-platform",
+ "rat-asm",
+ "rat-core",
+ "rat-cpu",
+ "rat-output",
+ "rat-platform",
  "serde",
  "serde_json",
  "tokio",
@@ -958,15 +958,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "raw-syntax"
+name = "rat-syntax"
 version = "0.1.0"
 dependencies = [
- "raw-core",
- "raw-cpu",
+ "rat-core",
+ "rat-cpu",
 ]
 
 [[package]]
-name = "raw-tests"
+name = "rat-tests"
 version = "0.1.0"
 dependencies = [
  "cpu-6502",
@@ -976,8 +976,8 @@ dependencies = [
  "cpu-spc700",
  "cpu-z80",
  "emu-core",
- "raw-asm",
- "raw-core",
+ "rat-asm",
+ "rat-core",
 ]
 
 [[package]]

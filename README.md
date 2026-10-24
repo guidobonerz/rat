@@ -20,7 +20,7 @@ opcode against mimic's disassemblers (about 68,000 instructions; see
 
 ## Source dialects
 
-raw reads three dialects and can convert between them:
+rat reads three dialects and can convert between them:
 
 * **ACME**: `!` pseudo-ops, labels without colons, `.local` and `@cheap`
   labels, anonymous `-`/`+` labels, `+macro` calls, `!zone`, `!for`,
@@ -32,15 +32,15 @@ raw reads three dialects and can convert between them:
   preprocessor, `.namespace`, segments, `.file`, `.disk`,
   `LoadBinary`/`LoadSid`/`LoadPicture`, `.assert`. `.plugin` (Java) is not
   supported.
-* **raw**: raw's own dialect, documented in [docs/raw-syntax.md](docs/raw-syntax.md).
+* **rat**: rat's own dialect, documented in [docs/rat-syntax.md](docs/rat-syntax.md).
   It is CPU-neutral, uses Kick-style directives, accepts `;` and `//`
   comments, and adds `.org`, `.include`, `.incbin`, `.fn`,
   `.for i in a..b`, `.elif`, `dc.b`/`ds.w`, `@local` and `.local` labels.
 
 **Which dialect a file uses**, first match wins:
-1. A `.syntax acme|kick|raw` (or `!syntax`) line at the top of the file.
+1. A `.syntax acme|kick|rat` (or `!syntax`) line at the top of the file.
 2. `--syntax` on the command line (main file only).
-3. The extension: `.a` is ACME, `.asm` is KickAssembler, `.rsm` is raw.
+3. The extension: `.a` is ACME, `.asm` is KickAssembler, `.rat` is rat.
 4. The dialect of the file that includes it.
 
 Every included file is detected on its own, so one project can mix
@@ -55,7 +55,7 @@ A **platform** chooses the default CPU, the default origin, the allowed
 output formats, the text encoding and the platform directives:
 
 ```
-.platform c64        ; Kick and raw
+.platform c64        ; Kick and rat
 !platform nes        ; ACME
 ```
 
@@ -63,7 +63,7 @@ Features that belong to one platform only exist on that platform.
 `BasicUpstart`, `LoadSid`, `LoadPicture`, `.disk`, and the `prg`, `d64` and
 `crt` formats are Commodore features. Using them on `nes`, `cpc` or `amiga`
 is an error that names the platform you need. KickAssembler and ACME
-sources default to `c64`, so existing sources build unchanged; raw
+sources default to `c64`, so existing sources build unchanged; rat
 sources start on `generic`.
 
 | Platform | CPU | Formats (first = default) | Platform directives |
@@ -82,20 +82,20 @@ sources start on `generic`.
 | `generic`, `sim6502` | 6502 | bin | |
 
 `bin`, `hex` (Intel HEX) and `srec` (Motorola S-records) are available on
-every platform. Run `raw platforms` and `raw formats` for the full lists.
+every platform. Run `rat platforms` and `rat formats` for the full lists.
 
 ## CLI
 
 ```
-raw build main.asm                       # dialect from extension, c64 → main.prg
-raw build game.rsm -p nes -o game.nes
-raw build demo.a -D DEBUG=1 -I lib --listing demo.lst --vice-labels demo.vs
-raw build intro.asm -f d64               # D64 with one PRG
-raw disasm game.prg --cpu 6510           # PRG load address is honoured
-raw disasm rom.bin --cpu 6809 --org $e000
-raw convert old.a --to kick -o new.asm   # ACME → KickAssembler
-raw serve --bind 127.0.0.1:8080          # REST API
-raw cpus | raw platforms | raw formats
+rat build main.asm                       # dialect from extension, c64 → main.prg
+rat build game.rat -p nes -o game.nes
+rat build demo.a -D DEBUG=1 -I lib --listing demo.lst --vice-labels demo.vs
+rat build intro.asm -f d64               # D64 with one PRG
+rat disasm game.prg --cpu 6510           # PRG load address is honoured
+rat disasm rom.bin --cpu 6809 --org $e000
+rat convert old.a --to kick -o new.asm   # ACME → KickAssembler
+rat serve --bind 127.0.0.1:8080          # REST API
+rat cpus | rat platforms | rat formats
 ```
 
 Errors are printed rustc-style with the source line.
@@ -107,7 +107,7 @@ Errors are printed rustc-style with the source line.
 
 ## REST API
 
-`raw serve` starts an axum server. The API is described by OpenAPI at
+`rat serve` starts an axum server. The API is described by OpenAPI at
 `/openapi.json`, with Swagger UI at `/docs`.
 
 | Method | Path | |
@@ -128,7 +128,7 @@ curl -s localhost:8080/assemble -H 'content-type: application/json' \
 
 ## Converting between dialects
 
-`raw convert` parses a file and writes the same program in another
+`rat convert` parses a file and writes the same program in another
 dialect:
 * Comments and blank lines are kept.
 * ACME zones, `.local`/`@cheap` labels and anonymous labels are mapped onto
@@ -138,7 +138,7 @@ dialect:
 * Data byte order follows the CPU.
 
 Constructs the target cannot express are reported as warnings and left
-as `TODO(raw convert)` comments. For example, KickAssembler lists,
+as `TODO(rat convert)` comments. For example, KickAssembler lists,
 structs and functions cannot be converted to ACME. The test suite
 converts every corpus file to every dialect and checks that the result
 assembles to identical bytes.
@@ -152,20 +152,20 @@ assembles to identical bytes.
 * `!cpu 65c02` / `65ce02` / `4502` (ACME) are not available, for the same
   reason.
 * Converting KickAssembler script code (lists, structs, functions,
-  pseudocommands, segments) to ACME leaves `TODO(raw convert)` comments.
+  pseudocommands, segments) to ACME leaves `TODO(rat convert)` comments.
 
 ## How it works
 
 ```
 crates/
-  raw-core      spans, diagnostics, tokens, configurable lexer, statement IR
-  raw-cpu       CPU backends (encoder + disassembler per CPU)
-  raw-syntax    ACME and Kick/raw parsers → shared IR
-  raw-platform  platform registry, Commodore preludes, SID/picture loading
-  raw-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, hex, srec, symbol files
-  raw-asm       the multi-pass engine, script values, converter
-  raw-server    REST API
-  raw-cli       the `raw` binary
+  rat-core      spans, diagnostics, tokens, configurable lexer, statement IR
+  rat-cpu       CPU backends (encoder + disassembler per CPU)
+  rat-syntax    ACME and Kick/rat parsers → shared IR
+  rat-platform  platform registry, Commodore preludes, SID/picture loading
+  rat-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, hex, srec, symbol files
+  rat-asm       the multi-pass engine, script values, converter
+  rat-server    REST API
+  rat-cli       the `rat` binary
 tests/          round trips against mimic, corpus with golden outputs
 ```
 
@@ -188,10 +188,10 @@ cargo test --workspace --release
   6502, 65816 (all M/X widths), SPC700, Z80 (all prefix pages) and 6809
   opcode (all postbytes), plus every 68000 opcode word and a third of the
   68020 space. Each one is disassembled with mimic's disassembler,
-  assembled with raw, disassembled again and compared. The comparison is
+  assembled with rat, disassembled again and compared. The comparison is
   on text, so it accepts equivalent encodings.
 * **Corpus.** `tests/tests/corpus.rs` assembles C64, ACME, Kick script,
   CPC, Vectrex, NES, SNES (with SPC700), Atari 8-bit, 2600 and Amiga
   sources against golden outputs, and checks conversion to every dialect.
-* **REST.** `raw-server` has tests for JSON and multipart assembly,
+* **REST.** `rat-server` has tests for JSON and multipart assembly,
   disassembly, conversion and the OpenAPI document.

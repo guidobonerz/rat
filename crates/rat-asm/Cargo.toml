@@ -1,0 +1,18 @@
+[package]
+name = "rat-asm"
+description = "rat: the multi-pass assembler engine"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rat-core.workspace = true
+rat-cpu.workspace = true
+rat-syntax.workspace = true
+rat-platform.workspace = true
+rat-output.workspace = true
+serde.workspace = true
+indexmap.workspace = true
