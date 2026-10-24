@@ -1,0 +1,20 @@
+[package]
+name = "raw-tests"
+description = "raw: integration tests (round trips against mimic's disassemblers, corpus)"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+raw-asm.workspace = true
+raw-core.workspace = true
+emu-core = { path = "../../mimic/crates/emu-core" }
+cpu-6502 = { path = "../../mimic/crates/cpu-6502" }
+cpu-65816 = { path = "../../mimic/crates/cpu-65816" }
+cpu-spc700 = { path = "../../mimic/crates/cpu-spc700" }
+cpu-z80 = { path = "../../mimic/crates/cpu-z80" }
+cpu-6809 = { path = "../../mimic/crates/cpu-6809" }
+cpu-m68k = { path = "../../mimic/crates/cpu-m68k" }

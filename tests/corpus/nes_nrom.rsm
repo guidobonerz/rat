@@ -1,0 +1,17 @@
+.platform nes
+.ines mapper=0, prg=1, chr=1, mirroring=v
+.org $c000
+reset:
+    sei
+    cld
+    ldx #$ff
+    txs
+-   bit $2002
+    bpl -
+    jmp *
+nmi: rti
+.org $fffa
+    .word nmi, reset, nmi
+.nes.chr {
+    .fill 16, $ff
+}

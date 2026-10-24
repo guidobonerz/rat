@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "tests"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+raw-core = { path = "crates/raw-core" }
+raw-cpu = { path = "crates/raw-cpu" }
+raw-syntax = { path = "crates/raw-syntax" }
+raw-platform = { path = "crates/raw-platform" }
+raw-output = { path = "crates/raw-output" }
+raw-asm = { path = "crates/raw-asm" }
+raw-server = { path = "crates/raw-server" }
+
+clap = { version = "4.6", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+codespan-reporting = "0.12"
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+tower = "0.5"
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
+image = { version = "0.25", default-features = false, features = ["png", "gif", "jpeg", "bmp"] }
+indexmap = "2"

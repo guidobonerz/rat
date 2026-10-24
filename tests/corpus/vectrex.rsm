@@ -1,0 +1,19 @@
+.platform vectrex
+.org 0
+.vectrex.header "RAW TEST"
+main:
+    jsr $f192
+    lda #$7f
+    ldx #table
+    ldd ,x++
+    leax 10,x
+    sta <$20
+    stb [,y]
+    lda -1,u
+    lda 200,x
+    pshs a,b,x
+    tfr a,dp
+    lbra main
+    bne main
+    ldy table,pcr
+table: .word $1234, main

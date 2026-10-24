@@ -1,0 +1,31 @@
+; ACME test
+!to "acme_features.prg", cbm
+!cpu 6510
+* = $c000
+CHROUT = $ffd2
+!zone main
+start   ldx #0
+.loop   lda .msg,x
+        beq +
+        jsr CHROUT
+        inx
+        bne .loop
++       rts
+.msg    !pet "hello", 13, 0
+!macro poke .addr, .val {
+        lda #.val
+        sta .addr
+}
+        +poke $d020, 1
+        +poke $d021, 0
+!for i, 0, 3 { !byte i * 2 }
+!if start = $c000 { !word start } else { !error "bad" }
+        lda+2 $12
+        lax ($10),y
+!align $ff, 0, $ea
+table   !fill 4, $aa
+@cheap  nop
+-       dex
+        bne -
+!hex 01 02 0a0b
+!binary "data.bin", 2, 1

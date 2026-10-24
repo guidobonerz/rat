@@ -1,0 +1,13 @@
+[package]
+name = "raw-syntax"
+description = "raw: ACME, KickAssembler and raw dialect front ends"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+raw-core.workspace = true
+raw-cpu.workspace = true

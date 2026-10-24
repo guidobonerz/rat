@@ -1,0 +1,12 @@
+[package]
+name = "raw-output"
+description = "raw: output formats (prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, hex, srec) and symbol files"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true

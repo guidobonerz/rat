@@ -1,0 +1,6 @@
+.platform atari2600
+.org $f000
+reset: sei
+       jmp reset
+.org $fffc
+       .word reset, reset

@@ -1,0 +1,6 @@
+.platform atari8
+.org $2000
+start: lda #$22
+       sta $d01a
+       jmp start
+.xex.run start
