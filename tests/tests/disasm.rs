@@ -53,6 +53,11 @@ fn mos6502() {
 }
 
 #[test]
+fn w65c02() {
+    check("65c02", (0..=255u8).map(|o| vec![o, 0x34, 0x12]), "", false);
+}
+
+#[test]
 fn w65816() {
     check("65816", (0..=255u8).map(|o| vec![o, 0x34, 0x12, 0x7e]), ".a8\n.i8", false);
     check("65816", (0..=255u8).map(|o| vec![o, 0x34, 0x12, 0x7e]), ".a16\n.i16", true);

@@ -63,7 +63,7 @@ reset:  sei
 | `.le16 .be16 .le24 .be24 .le32 .be32` | explicit byte order |
 | `dc.b dc.w dc.l`, `ds.b ds.w ds.l n[, fill]` | 68k style |
 | `.text "…"`, `.asciiz "…"`, `.petscii "…"`, `.screen "…"` | text in the current encoding, NUL-terminated, PETSCII, C64 screen codes |
-| `.encoding "ascii\|petscii_mixed\|petscii_upper\|screencode_mixed\|screencode_upper\|atari_screen\|zx81"` | text encoding (the default comes from the platform) |
+| `.encoding "ascii\|petscii_mixed\|petscii_upper\|screencode_mixed\|screencode_upper\|atari_screen\|zx81\|apple"` | text encoding (the default comes from the platform); `apple` is ASCII with bit 7 set (Apple II `COUT`) |
 | `.hex 0123 abcd` | hex bytes |
 | `.fill n, expr` | `expr` may use `i`, the index (as in Kick) |
 | `.lohifill n, expr` | low and high byte tables, reached as `label.lo` / `label.hi` |
@@ -115,7 +115,7 @@ written. Use `.for i in a..b`, or `.while` with `.eval`.
 
 | Directive | |
 |---|---|
-| `.cpu 6502\|6502ni\|6510\|2a03\|6507\|65816\|spc700\|z80\|6809\|68000\|68020` | change the CPU |
+| `.cpu 6502\|6502ni\|6510\|2a03\|6507\|65c02\|65816\|spc700\|z80\|6809\|68000\|68020` | change the CPU |
 | `.platform name [{ … }]` | change the platform; also selects its CPU |
 | `.a8 .a16 .i8 .i16` | 65816 register widths |
 | `.setdp page` | 6809 direct page; 65816 assumed D register |

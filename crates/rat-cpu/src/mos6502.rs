@@ -1,7 +1,10 @@
-//! NMOS 6502 family including the undocumented opcodes.
+//! NMOS 6502 family including the undocumented opcodes, and the CMOS
+//! 65C02 (Apple IIe enhanced).
 //!
-//! Opcode matrix ported from `mimic/crates/cpu-6502/src/table.rs`
-//! (undocumented names after Groepaz, "NMOS 6510 Unintended Opcodes").
+//! Opcode matrices ported from `mimic/crates/cpu-6502/src/table.rs`
+//! (undocumented names after Groepaz, "NMOS 6510 Unintended Opcodes"; the
+//! 65C02 without the Rockwell bit instructions, like mimic's: every
+//! undefined CMOS opcode is a NOP of one to three bytes).
 
 use std::collections::HashMap;
 
@@ -24,13 +27,17 @@ pub enum Mode {
     IndX,
     IndY,
     Rel,
+    /// 65C02 `(zp)`.
+    Zpi,
+    /// 65C02 `jmp (abs,x)`.
+    AbsXInd,
 }
 
 impl Mode {
     pub fn size(self) -> usize {
         match self {
             Mode::Imp => 1,
-            Mode::Abs | Mode::AbsX | Mode::AbsY | Mode::Ind => 3,
+            Mode::Abs | Mode::AbsX | Mode::AbsY | Mode::Ind | Mode::AbsXInd => 3,
             _ => 2,
         }
     }
@@ -74,6 +81,65 @@ pub const TABLE: [(&str, Mode); 256] = [
     ("sed",Imp),("sbc",AbsY),("nop",Imp),("isc",AbsY),("nop",AbsX),("sbc",AbsX),("inc",AbsX),("isc",AbsX),
 ];
 
+/// The 65C02 matrix: the NMOS one with the new instructions and modes,
+/// every other undefined opcode a NOP (mimic's `cmos_table`).
+pub fn cmos_table() -> [(&'static str, Mode); 256] {
+    let mut t = TABLE;
+    for i in 0..256 {
+        let (m, mode) = TABLE[i];
+        let lo = i & 0x0f;
+        let odd_row = i & 0x10 != 0;
+        t[i] = if lo == 0x03 || lo == 0x0b {
+            ("nop", Imp)
+        } else if lo == 0x07 {
+            ("nop", if odd_row { ZpX } else { Zp })
+        } else if lo == 0x0f {
+            ("nop", Abs)
+        } else if lo == 0x02 && matches!(m, "jam" | "nop") {
+            if odd_row {
+                // ORA AND EOR ADC STA LDA CMP SBC (zp): the (zp),Y column's ops
+                (TABLE[i - 1].0, Zpi)
+            } else {
+                ("nop", Imm)
+            }
+        } else {
+            match m {
+                "slo" | "rla" | "sre" | "rra" | "sax" | "lax" | "dcp" | "isc" | "anc" | "alr" | "arr" | "ane" | "lxa" | "sbx" | "las" | "tas" | "sha" | "shx" | "shy" => ("nop", Imp),
+                _ => (m, mode),
+            }
+        };
+    }
+    t[0x04] = ("tsb", Zp);
+    t[0x0c] = ("tsb", Abs);
+    t[0x14] = ("trb", Zp);
+    t[0x1c] = ("trb", Abs);
+    t[0x1a] = ("inc", Imp);
+    t[0x3a] = ("dec", Imp);
+    t[0x34] = ("bit", ZpX);
+    t[0x3c] = ("bit", AbsX);
+    t[0x89] = ("bit", Imm);
+    t[0x5a] = ("phy", Imp);
+    t[0x7a] = ("ply", Imp);
+    t[0xda] = ("phx", Imp);
+    t[0xfa] = ("plx", Imp);
+    t[0x64] = ("stz", Zp);
+    t[0x74] = ("stz", ZpX);
+    t[0x9c] = ("stz", Abs);
+    t[0x9e] = ("stz", AbsX);
+    t[0x7c] = ("jmp", AbsXInd);
+    t[0x80] = ("bra", Rel);
+    t[0x5c] = ("nop", Abs);
+    t[0xdc] = ("nop", Abs);
+    t[0xfc] = ("nop", Abs);
+    t[0xcb] = ("nop", Imp);
+    t[0xdb] = ("nop", ZpX);
+    t[0x44] = ("nop", Zp);
+    t[0x54] = ("nop", ZpX);
+    t[0xd4] = ("nop", ZpX);
+    t[0xf4] = ("nop", ZpX);
+    t
+}
+
 const DOCUMENTED: &[&str] = &[
     "adc", "and", "asl", "bcc", "bcs", "beq", "bit", "bmi", "bne", "bpl", "brk", "bvc", "bvs",
     "clc", "cld", "cli", "clv", "cmp", "cpx", "cpy", "dec", "dex", "dey", "eor", "inc", "inx",
@@ -89,6 +155,11 @@ fn is_documented_opcode(op: u8) -> bool {
         return false;
     }
     !(m == "nop" && op != 0xea) && op != 0xeb
+}
+
+/// Documented 65C02 opcodes: everything but the NOP fillers.
+fn is_documented_cmos(table: &[(&str, Mode); 256], op: u8) -> bool {
+    table[op as usize].0 != "nop" || op == 0xea
 }
 
 /// Alternative names used by ACME, KickAssembler, ca65 and others.
@@ -135,34 +206,41 @@ pub enum Variant {
     Ricoh2a03,
     /// Atari 2600: 13-bit address bus.
     M6507,
+    /// CMOS 65C02 (Apple IIe enhanced): BRA, PHX/PHY/PLX/PLY, STZ, TRB/TSB,
+    /// `(zp)`, `jmp (abs,x)`, `bit #`, `inc a`/`dec a`; no undocumented
+    /// opcodes and no Rockwell bit instructions.
+    Cmos65c02,
 }
 
 pub struct Mos6502 {
     variant: Variant,
+    table: [(&'static str, Mode); 256],
     ops: HashMap<&'static str, HashMap<Mode, u8>>,
 }
 
 impl Mos6502 {
     pub fn new(variant: Variant) -> Mos6502 {
         let mut ops: HashMap<&'static str, HashMap<Mode, u8>> = HashMap::new();
+        let cmos = variant == Variant::Cmos65c02;
+        let table = if cmos { cmos_table() } else { TABLE };
         let legal_only = variant == Variant::NoIllegals;
         // documented encodings first so they win over duplicates
         for pass in 0..2 {
-            for (op, &(m, mode)) in TABLE.iter().enumerate() {
-                let doc = is_documented_opcode(op as u8);
+            for (op, &(m, mode)) in table.iter().enumerate() {
+                let doc = if cmos { is_documented_cmos(&table, op as u8) } else { is_documented_opcode(op as u8) };
                 if (pass == 0) != doc || (legal_only && !doc) {
                     continue;
                 }
                 ops.entry(m).or_default().entry(mode).or_insert(op as u8);
             }
         }
-        if !legal_only {
+        if !legal_only && !cmos {
             ops.entry("anc2").or_default().insert(Imm, 0x2b);
             ops.entry("sbc2").or_default().insert(Imm, 0xeb);
             // KickAssembler: `lax #imm` is LXA ($AB)
             ops.entry("lax").or_default().insert(Imm, 0xab);
         }
-        Mos6502 { variant, ops }
+        Mos6502 { variant, table, ops }
     }
 
     fn lookup(&self, m: &str) -> Option<&HashMap<Mode, u8>> {
@@ -170,11 +248,18 @@ impl Mos6502 {
         if let Some(t) = self.ops.get(m.as_str()) {
             return Some(t);
         }
-        if self.variant == Variant::NoIllegals {
+        if matches!(self.variant, Variant::NoIllegals | Variant::Cmos65c02) {
             return None;
         }
         let canon = ALIASES.iter().find(|(a, _)| *a == m)?.1;
         self.ops.get(canon)
+    }
+
+    fn documented(&self, op: u8) -> bool {
+        match self.variant {
+            Variant::Cmos65c02 => is_documented_cmos(&self.table, op),
+            _ => is_documented_opcode(op),
+        }
     }
 }
 
@@ -309,6 +394,7 @@ impl Cpu for Mos6502 {
             Variant::M6510 => ("6510", &["nmos6510"], "MOS 6510 (C64) with undocumented opcodes"),
             Variant::Ricoh2a03 => ("2a03", &["2a07", "nes"], "Ricoh 2A03/2A07 (NES), no decimal mode"),
             Variant::M6507 => ("6507", &[], "MOS 6507 (Atari 2600), 13-bit address bus"),
+            Variant::Cmos65c02 => ("65c02", &["65sc02", "w65c02", "g65sc02"], "CMOS 65C02 (Apple IIe enhanced), no Rockwell bit instructions"),
         };
         CpuInfo {
             id,
@@ -329,7 +415,7 @@ impl Cpu for Mos6502 {
 
     fn mnemonics(&self) -> Vec<String> {
         let mut v: Vec<String> = self.ops.keys().map(|s| s.to_string()).collect();
-        if self.variant != Variant::NoIllegals {
+        if !matches!(self.variant, Variant::NoIllegals | Variant::Cmos65c02) {
             v.extend(ALIASES.iter().map(|(a, _)| a.to_string()));
         }
         v.sort();
@@ -348,7 +434,7 @@ impl Cpu for Mos6502 {
             .ok_or_else(|| format!("unknown instruction `{mnemonic}`"))?;
         let force = size_suffix(suffix)?.map(|s| s.min(2));
         let toks = ctx.toks().to_vec();
-        let operand = parse_operand(&toks, modes.contains_key(&Ind))?;
+        let operand = parse_operand(&toks, modes.contains_key(&Ind) || modes.contains_key(&Zpi))?;
         let m = mnemonic.to_ascii_lowercase();
         let one = |mode: Mode| modes.get(&mode).copied();
         let mut out = Vec::with_capacity(3);
@@ -395,9 +481,21 @@ impl Cpu for Mos6502 {
                 }
             }
             Operand::Ind(r) => {
-                let op = one(Ind).ok_or_else(|| format!("`{m}` has no indirect mode"))?;
                 let n = eval(ctx, r)?;
-                out.push(op);
+                // 65C02 `(zp)`; `jmp (abs)` stays 16 bit
+                if let Some(op) = one(Zpi) {
+                    out.push(op);
+                    out.push(fit(ctx, n, 0, 255, 8, "zero-page address") as u8);
+                } else {
+                    let op = one(Ind).ok_or_else(|| format!("`{m}` has no indirect mode"))?;
+                    out.push(op);
+                    out.extend(le16(fit(ctx, n, -32768, 65535, 16, "address")));
+                }
+            }
+            // 65C02 `jmp (abs,x)`
+            Operand::IndX(r) if one(AbsXInd).is_some() && one(IndX).is_none() => {
+                let n = eval(ctx, r)?;
+                out.push(one(AbsXInd).unwrap());
                 out.extend(le16(fit(ctx, n, -32768, 65535, 16, "address")));
             }
             Operand::IndX(r) | Operand::IndY(r) => {
@@ -435,8 +533,8 @@ impl Cpu for Mos6502 {
 
     fn disassemble(&self, bytes: &[u8], addr: u32, _st: &CpuState) -> Option<(usize, String)> {
         let op = *bytes.first()?;
-        let (m, mode) = TABLE[op as usize];
-        if self.variant == Variant::NoIllegals && !is_documented_opcode(op) {
+        let (m, mode) = self.table[op as usize];
+        if self.variant == Variant::NoIllegals && !self.documented(op) {
             return None;
         }
         let len = mode.size();
@@ -446,11 +544,11 @@ impl Cpu for Mos6502 {
         let b1 = u32::from(bytes.get(1).copied().unwrap_or(0));
         let w = b1 | u32::from(bytes.get(2).copied().unwrap_or(0)) << 8;
         let m = match op {
-            0x2b => "anc2",
-            0xeb => "sbc2",
+            0x2b if self.variant != Variant::Cmos65c02 => "anc2",
+            0xeb if self.variant != Variant::Cmos65c02 => "sbc2",
             _ => m,
         };
-        let rmw_acc = matches!(op, 0x0a | 0x2a | 0x4a | 0x6a);
+        let rmw_acc = matches!(op, 0x0a | 0x2a | 0x4a | 0x6a) || (mode == Imp && matches!(m, "inc" | "dec"));
         let operand = match mode {
             Imp if rmw_acc => "a".to_owned(),
             Imp => String::new(),
@@ -465,6 +563,8 @@ impl Cpu for Mos6502 {
             IndX => format!("({},x)", hex(b1, 2)),
             IndY => format!("({}),y", hex(b1, 2)),
             Rel => hex((addr.wrapping_add(2).wrapping_add(b1 as u8 as i8 as u32)) & 0xffff, 4),
+            Zpi => format!("({})", hex(b1, 2)),
+            AbsXInd => format!("({},x)", hex(w, 4)),
         };
         let text = if operand.is_empty() {
             m.to_owned()

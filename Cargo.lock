@@ -193,6 +193,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
+name = "chips-amstrad"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
+name = "chips-sinclair"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
 name = "clap"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -337,6 +351,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "devices-input"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
 name = "digest"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -356,6 +377,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "drives-other"
+version = "0.1.0"
+dependencies = [
+ "chips-amstrad",
+ "cpu-6502",
+ "emu-core",
+ "media",
 ]
 
 [[package]]
@@ -709,10 +740,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
+name = "machine-spectrum"
+version = "0.1.0"
+dependencies = [
+ "chips-amstrad",
+ "chips-sinclair",
+ "cpu-z80",
+ "devices-input",
+ "drives-other",
+ "emu-core",
+ "media",
+]
+
+[[package]]
 name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
+
+[[package]]
+name = "media"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
 
 [[package]]
 name = "memchr"
@@ -976,6 +1027,8 @@ dependencies = [
  "cpu-spc700",
  "cpu-z80",
  "emu-core",
+ "machine-spectrum",
+ "media",
  "rat-asm",
  "rat-core",
 ]

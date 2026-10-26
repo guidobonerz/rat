@@ -180,6 +180,43 @@ pub(crate) fn directive(e: &mut Engine<'_>, plat: &'static Platform, name: &str,
             }
             return e.prelude_macro(plat, "VectrexHeader", a, span);
         }
+        ("spectrum", "tap") => {
+            let exec = e.arg_int(args, "exec", 1).map(|v| v as u16);
+            let loader = args.iter().any(|a| a.key.as_deref().is_some_and(|k| k.eq_ignore_ascii_case("loader")));
+            e.plat.tap = Some(rat_output::spectrum::TapOptions {
+                name: e.arg_str(args, "name", 0).unwrap_or_default(),
+                exec,
+                loader: if loader { e.arg_bool(args, "loader", 2) } else { exec.is_some() },
+            });
+        }
+        ("spectrum", "sna") => {
+            let mut o = rat_output::spectrum::SnaOptions {
+                exec: e.arg_int(args, "exec", 0).map(|v| v as u16),
+                sp: e.arg_int(args, "sp", 1).map(|v| v as u16),
+                ..Default::default()
+            };
+            if let Some(b) = e.arg_int(args, "border", 2) {
+                o.border = b as u8;
+            }
+            if let Some(im) = e.arg_int(args, "im", 3) {
+                o.im = im as u8;
+            }
+            if args.iter().any(|a| a.key.as_deref().is_some_and(|k| k.eq_ignore_ascii_case("ei"))) {
+                o.ei = e.arg_bool(args, "ei", 4);
+            }
+            e.plat.sna = Some(o);
+        }
+        ("apple2" | "apple2e", "dsk") => {
+            let mut o = rat_output::dos33::DskOptions { name: e.arg_str(args, "name", 0).unwrap_or_default(), ..Default::default() };
+            if let Some(v) = e.arg_int(args, "volume", 1) {
+                o.volume = v as u8;
+            }
+            if let Some(t) = e.arg_int(args, "type", 2) {
+                o.file_type = t as u8;
+            }
+            o.locked = e.arg_bool(args, "locked", 3);
+            e.plat.dsk = Some(o);
+        }
         ("coleco", "header") => {
             let a = e.arg_int(args, "start", 0).map_or(Value::Undef, Value::Int);
             return e.prelude_macro(plat, "ColecoHeader", vec![a], span);

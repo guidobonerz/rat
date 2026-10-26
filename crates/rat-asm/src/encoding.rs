@@ -1,5 +1,5 @@
 //! Text encodings: ASCII, PETSCII (mixed/upper), C64 screen codes
-//! (mixed/upper), ATASCII screen codes, ZX81.
+//! (mixed/upper), ATASCII screen codes, ZX81, Apple II high-bit ASCII.
 
 /// Canonical encoding name for the spellings of ACME, Kick and rat.
 pub fn canonical(name: &str) -> Option<&'static str> {
@@ -12,6 +12,7 @@ pub fn canonical(name: &str) -> Option<&'static str> {
         "atascii" => "ascii",
         "atari_screen" | "antic" => "atari_screen",
         "zx81" => "zx81",
+        "apple" | "apple_high" | "hiascii" | "ascii_high" => "apple",
         _ => return None,
     })
 }
@@ -81,6 +82,7 @@ pub fn encode_char(enc: &str, ch: char) -> u8 {
             _ => c as u8,
         },
         "zx81" => zx81(ch),
+        "apple" => if c < 0x80 { c as u8 | 0x80 } else { b'?' | 0x80 },
         _ => {
             if c < 0x100 {
                 c as u8

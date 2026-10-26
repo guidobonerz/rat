@@ -37,7 +37,7 @@ pub struct AssembleRequest {
     pub files: BTreeMap<String, FileContent>,
     /// Path of the main source in `files`.
     pub main: String,
-    /// CPU (6502, 6510, 2a03, 6507, 65816, spc700, z80, 6809, 68000, 68020).
+    /// CPU (6502, 6510, 2a03, 6507, 65c02, 65816, spc700, z80, 6809, 68000, 68020).
     pub cpu: Option<String>,
     /// Platform (c64, nes, snes, amiga, cpc, ...).
     pub platform: Option<String>,
@@ -194,7 +194,7 @@ fn bad(status: StatusCode, msg: impl Into<String>) -> Response {
 
 #[derive(OpenApi)]
 #[openapi(
-    info(title = "rat assembler API", description = "Assemble, disassemble and convert ACME / KickAssembler / rat sources for 6502, 65816, SPC700, Z80, 6809 and 68000/68020."),
+    info(title = "rat assembler API", description = "Assemble, disassemble and convert ACME / KickAssembler / rat sources for 6502, 65C02, 65816, SPC700, Z80, 6809 and 68000/68020."),
     paths(assemble, disassemble, convert, cpus, platforms, formats, health),
     components(schemas(AssembleRequest, FileContent, AssembleResponse, OutputFile, DiagnosticOut, SymbolOut, DisassembleRequest, DisassembleResponse, DisasmLine, ConvertRequest, ConvertResponse, CpuOut, PlatformOut, DirectiveOut, FormatOut, ErrorOut))
 )]

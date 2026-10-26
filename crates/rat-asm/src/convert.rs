@@ -218,11 +218,7 @@ impl<'a> Printer<'a> {
                 let line = match self.to {
                     Dialect::Acme => format!(
                         "!convtab {}",
-                        match src_enc {
-                            "petscii_mixed" | "petscii_upper" => "pet",
-                            "screencode_mixed" | "screencode_upper" => "scr",
-                            _ => "raw",
-                        }
+                        acme_convtab(src_enc)
                     ),
                     _ => format!(".encoding \"{src_enc}\""),
                 };
@@ -1723,11 +1719,7 @@ impl<'a> Printer<'a> {
                     let t = match to {
                         Dialect::Acme => format!(
                             "!convtab {}",
-                            match canon {
-                                "petscii_mixed" | "petscii_upper" => "pet",
-                                "screencode_mixed" | "screencode_upper" => "scr",
-                                _ => "raw",
-                            }
+                            acme_convtab(canon)
                         ),
                         _ => format!(".encoding \"{canon}\""),
                     };
@@ -2099,5 +2091,17 @@ fn wrap(s: String, yes: bool) -> String {
         format!("({s})")
     } else {
         s
+    }
+}
+
+/// ACME `!convtab` name of a canonical encoding; the encodings ACME does
+/// not have (`zx81`, `apple`, `atari_screen`) keep their rat names, which
+/// rat's ACME parser accepts.
+fn acme_convtab(canon: &str) -> &str {
+    match canon {
+        "petscii_mixed" | "petscii_upper" => "pet",
+        "screencode_mixed" | "screencode_upper" => "scr",
+        "ascii" => "raw",
+        other => other,
     }
 }

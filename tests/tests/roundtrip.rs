@@ -77,6 +77,22 @@ fn mos6502_all_opcodes() {
     rep.finish("6502");
 }
 
+#[test]
+fn w65c02_all_opcodes() {
+    let cpu = cpu_6502::Cpu6502::new(cpu_6502::Config { variant: cpu_6502::Variant::Cmos65C02, ..cpu_6502::Config::default() });
+    let dis = |b: &[u8]| {
+        let mut bus = emu_core::testing::FlatBus::new(16);
+        bus.load(ORG, b);
+        cpu.disassemble(&bus, ORG).to_string()
+    };
+    let mut rep = Report::new();
+    for op in 0..=255u8 {
+        let text = dis(&[op, 0x34, 0x12]);
+        rep.check(&format!("${op:02x}"), &text, "", "65c02", dis);
+    }
+    rep.finish("65c02");
+}
+
 // ------------------------------------------------------------ 65816
 
 struct Bus816(Vec<u8>);

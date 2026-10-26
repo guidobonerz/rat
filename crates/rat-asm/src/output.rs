@@ -170,6 +170,21 @@ impl Engine<'_> {
                 let fname = base_name(name).to_uppercase();
                 rat_output::d64::d64(&fname, "01", &[rat_output::d64::DiskFile { name: fname.clone(), kind: 0x82, data }])?
             }
+            Format::Tap => {
+                let mut o = self.plat.tap.clone().unwrap_or_default();
+                if o.name.is_empty() {
+                    o.name = base_name(name).to_uppercase();
+                }
+                rat_output::spectrum::tap(chunks, fill, &o)?
+            }
+            Format::Sna => rat_output::spectrum::sna(chunks, fill, &self.plat.sna.clone().unwrap_or_default())?,
+            Format::Dsk => {
+                let mut o = self.plat.dsk.clone().unwrap_or_default();
+                if o.name.is_empty() {
+                    o.name = base_name(name).to_uppercase();
+                }
+                rat_output::dos33::dsk(chunks, fill, &o)?
+            }
             Format::Hunk => return Err("internal: hunk output is built by the driver".into()),
         })
     }

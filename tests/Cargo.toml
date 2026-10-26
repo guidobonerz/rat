@@ -18,3 +18,5 @@ cpu-spc700 = { path = "../../mimic/crates/cpu-spc700" }
 cpu-z80 = { path = "../../mimic/crates/cpu-z80" }
 cpu-6809 = { path = "../../mimic/crates/cpu-6809" }
 cpu-m68k = { path = "../../mimic/crates/cpu-m68k" }
+media = { path = "../../mimic/crates/media" }
+machine-spectrum = { path = "../../mimic/crates/machine-spectrum" }

@@ -1,0 +1,17 @@
+; rat dialect, ZX Spectrum: TAP with a BASIC loader
+.platform spectrum
+.tap name="HELLO", exec=start
+.org $8000
+start:
+    ld a, 2
+    call $1601          ; CHAN-OPEN (screen)
+    ld hl, msg
+loop:
+    ld a, (hl)
+    or a
+    ret z
+    rst $10             ; print
+    inc hl
+    jr loop
+msg: .text "Hello Spectrum!", 13
+     .byte 0

@@ -7,12 +7,13 @@ API.
 
 | CPU | Variants | Byte order | Used by |
 |---|---|---|---|
-| MOS 6502 family | `6502` (with undocumented opcodes), `6502ni`, `6510`, `2a03`, `6507` | little | C64, C128, VIC-20, PET, C16/Plus/4, Atari 8-bit, 2600, NES |
+| MOS 6502 family | `6502` (with undocumented opcodes), `6502ni`, `6510`, `2a03`, `6507` | little | C64, C128, VIC-20, PET, C16/Plus/4, Atari 8-bit, 2600, NES, Apple II |
+| CMOS 65C02 | `65c02` (no Rockwell bit instructions, like mimic) | little | Apple IIe enhanced |
 | WDC 65C816 | `65816` | little | SNES |
 | Sony SPC700 | `spc700` | little | SNES audio |
-| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ColecoVision, C128 |
+| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ZX Spectrum, ColecoVision, C128 |
 | Motorola 6809 | `6809` | big | Vectrex |
-| Motorola 68000 / 68020 | `68000`, `68020` | big | Amiga 500…1200 |
+| Motorola 68000 / 68020 | `68000`, `68020` | big | Amiga 500…1200, Macintosh |
 
 The encoding tables are ported from mimic's cores. The tests check every
 opcode against mimic's disassemblers (about 68,000 instructions; see
@@ -76,6 +77,9 @@ sources start on `generic`.
 | `snes` | 65816 | sfc | `snes.header title= map=lorom\|hirom\|exhirom`, `snes.spc [addr] { }` |
 | `cpc` | z80 | amsdos | `amsdos name= exec=` |
 | `zx81` | z80 | p | |
+| `spectrum` | z80 | tap, sna | `tap name= exec= loader=` (BASIC loader `CLEAR/LOAD ""CODE/RANDOMIZE USR`), `sna exec= sp= border= im= ei=` |
+| `apple2`, `apple2e` | 6502, 65c02 | dsk (DOS 3.3 image with the program as a binary file; boot a DOS and `BRUN` it) | `dsk name= volume= type= locked=` |
+| `mac` | 68000 | bin | |
 | `coleco` | z80 | bin | `coleco.header start` |
 | `vectrex` | 6809 | bin | `vectrex.header "TITLE"` |
 | `amiga`, `amiga1200` | 68000, 68020 | hunk (with RELOC32) | `amiga.section name, code\|data\|bss` |
@@ -147,10 +151,14 @@ assembles to identical bytes.
 
 * KickAssembler: `.plugin` (Java), `.modify`/`.filemodify` and segment
   modifiers, `createFile`, and label arrays of loops (`loop[i].label`)
-  are not supported. The `_65c02` and `dtv` CPUs are missing because mimic
-  does not emulate them.
-* `!cpu 65c02` / `65ce02` / `4502` (ACME) are not available, for the same
-  reason.
+  are not supported. The `dtv` CPU is missing because mimic does not
+  emulate it.
+* `!cpu 65ce02` / `4502` (ACME) are not available, for the same reason.
+  `65c02` has no Rockwell/WDC bit instructions (`RMB`, `SMB`, `BBR`,
+  `BBS`, `STP`, `WAI`), as mimic's 65C02 (the NCR/GTE part of the
+  Apple IIe).
+* Macintosh output is raw code (`bin`, `hex`, `srec`); there is no
+  resource-fork or MFS disk writer.
 * Converting KickAssembler script code (lists, structs, functions,
   pseudocommands, segments) to ACME leaves `TODO(rat convert)` comments.
 
@@ -162,7 +170,7 @@ crates/
   rat-cpu       CPU backends (encoder + disassembler per CPU)
   rat-syntax    ACME and Kick/rat parsers → shared IR
   rat-platform  platform registry, Commodore preludes, SID/picture loading
-  rat-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, hex, srec, symbol files
+  rat-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, tap, sna, dsk, hex, srec, symbol files
   rat-asm       the multi-pass engine, script values, converter
   rat-server    REST API
   rat-cli       the `rat` binary
@@ -185,7 +193,7 @@ cargo test --workspace --release
 ```
 
 * **Round trips against mimic.** `tests/tests/roundtrip.rs` takes every
-  6502, 65816 (all M/X widths), SPC700, Z80 (all prefix pages) and 6809
+  6502, 65C02, 65816 (all M/X widths), SPC700, Z80 (all prefix pages) and 6809
   opcode (all postbytes), plus every 68000 opcode word and a third of the
   68020 space. Each one is disassembled with mimic's disassembler,
   assembled with rat, disassembled again and compared. The comparison is

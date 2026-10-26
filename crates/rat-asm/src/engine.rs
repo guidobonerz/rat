@@ -69,6 +69,9 @@ pub(crate) struct PlatformState {
     pub snes_map: Option<rat_output::SnesMap>,
     pub amsdos: Option<(String, Option<u16>)>,
     pub crt: Option<rat_output::CrtInfo>,
+    pub tap: Option<rat_output::spectrum::TapOptions>,
+    pub sna: Option<rat_output::spectrum::SnaOptions>,
+    pub dsk: Option<rat_output::dos33::DskOptions>,
 }
 
 pub(crate) struct ListLine {

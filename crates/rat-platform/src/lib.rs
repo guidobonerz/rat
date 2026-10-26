@@ -101,6 +101,11 @@ const CPC_DIRS: &[DirSpec] = &[DirSpec { name: "amsdos", args: "name=, exec=", d
 const AMIGA_DIRS: &[DirSpec] = &[DirSpec { name: "section", args: "name, code|data|bss", description: "start a hunk; absolute longwords are relocated (RELOC32)" }];
 const VECTREX_DIRS: &[DirSpec] = &[DirSpec { name: "header", args: "title [, music]", description: "cartridge header (`g GCE` copyright, music, title)" }];
 const COLECO_DIRS: &[DirSpec] = &[DirSpec { name: "header", args: "start [, title]", description: "cartridge header at $8000 ($AA55, pointers, start address)" }];
+const SPECTRUM_DIRS: &[DirSpec] = &[
+    DirSpec { name: "tap", args: "name=, exec=, loader=", description: "TAP output: name of the CODE block; with exec= (or loader=true) a BASIC loader `CLEAR/LOAD \"\" CODE/RANDOMIZE USR exec` goes first" },
+    DirSpec { name: "sna", args: "exec=, sp=, border=, im=, ei=", description: "SNA output: entry point (default: lowest address), stack, border colour, interrupt mode" },
+];
+const APPLE2_DIRS: &[DirSpec] = &[DirSpec { name: "dsk", args: "name=, volume=, type=, locked=", description: "DSK output: catalog name, volume number (254), DOS file type byte ($04 binary)" }];
 
 const NONE: &[DirSpec] = &[];
 
@@ -268,6 +273,19 @@ platforms![
         prelude: None,
     },
     Platform {
+        id: "spectrum",
+        aliases: &["zxspectrum", "zx", "spectrum48", "spectrum128", "zx128", "plus2", "+2", "speccy"],
+        name: "Sinclair ZX Spectrum 48K/128K/+2",
+        cpu: "z80",
+        formats: &[Format::Tap, Format::Sna],
+        default_org: Some(0x8000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: SPECTRUM_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
         id: "coleco",
         aliases: &["colecovision"],
         name: "ColecoVision",
@@ -292,6 +310,45 @@ platforms![
         directives: VECTREX_DIRS,
         functions: &[],
         prelude: Some(PRELUDE_VECTREX),
+    },
+    Platform {
+        id: "apple2",
+        aliases: &["appleii", "apple", "apple2plus", "iiplus", "a2"],
+        name: "Apple II / II+ / IIe",
+        cpu: "6502",
+        formats: &[Format::Dsk],
+        default_org: Some(0x2000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: APPLE2_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "apple2e",
+        aliases: &["apple2e_enhanced", "iie", "apple2c", "iic"],
+        name: "Apple IIe enhanced (65C02)",
+        cpu: "65c02",
+        formats: &[Format::Dsk],
+        default_org: Some(0x2000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: APPLE2_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "mac",
+        aliases: &["macintosh", "mac128", "mac512", "macplus", "macse", "mac128k", "mac512k"],
+        name: "Apple Macintosh 128K/512K/Plus/SE",
+        cpu: "68000",
+        formats: &[Format::Bin],
+        default_org: Some(0),
+        basic_start: None,
+        encoding: "ascii",
+        directives: NONE,
+        functions: &[],
+        prelude: None,
     },
     Platform {
         id: "amiga",
@@ -355,6 +412,8 @@ pub fn by_namespace(ns: &str) -> Option<&'static Platform> {
         "spc" => "snes",
         "amsdos" => "cpc",
         "hunk" => "amiga",
+        "tap" | "sna" => "spectrum",
+        "dsk" | "dos33" => "apple2",
         _ => return by_name(&n),
     };
     by_name(id)

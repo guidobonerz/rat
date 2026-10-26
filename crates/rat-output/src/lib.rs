@@ -2,7 +2,9 @@
 //! assembler decides what goes where.
 
 pub mod d64;
+pub mod dos33;
 pub mod formats;
+pub mod spectrum;
 pub mod symbols;
 
 pub use formats::*;
@@ -65,6 +67,12 @@ pub enum Format {
     Crt,
     /// Commodore 1541 disk image.
     D64,
+    /// ZX Spectrum tape.
+    Tap,
+    /// ZX Spectrum 48K snapshot.
+    Sna,
+    /// Apple II DOS 3.3 disk image.
+    Dsk,
     /// Intel HEX.
     Hex,
     /// Motorola S-records.
@@ -72,7 +80,7 @@ pub enum Format {
 }
 
 impl Format {
-    pub const ALL: [Format; 13] = [
+    pub const ALL: [Format; 16] = [
         Format::Bin,
         Format::Prg,
         Format::Xex,
@@ -84,6 +92,9 @@ impl Format {
         Format::Hunk,
         Format::Crt,
         Format::D64,
+        Format::Tap,
+        Format::Sna,
+        Format::Dsk,
         Format::Hex,
         Format::Srec,
     ];
@@ -101,6 +112,9 @@ impl Format {
             Format::Hunk => "hunk",
             Format::Crt => "crt",
             Format::D64 => "d64",
+            Format::Tap => "tap",
+            Format::Sna => "sna",
+            Format::Dsk => "dsk",
             Format::Hex => "hex",
             Format::Srec => "srec",
         }
@@ -129,6 +143,9 @@ impl Format {
             Format::Hunk => "Amiga hunk executable (with RELOC32)",
             Format::Crt => "C64 CRT cartridge",
             Format::D64 => "1541 disk image",
+            Format::Tap => "ZX Spectrum tape (CODE block, optional BASIC loader)",
+            Format::Sna => "ZX Spectrum 48K snapshot (starts at the entry point)",
+            Format::Dsk => "Apple II DOS 3.3 disk image with the program as a binary file",
             Format::Hex => "Intel HEX",
             Format::Srec => "Motorola S-records",
         }
@@ -147,6 +164,9 @@ impl Format {
             "hunk" | "exe" | "amiga" => Format::Hunk,
             "crt" => Format::Crt,
             "d64" => Format::D64,
+            "tap" | "zxtap" => Format::Tap,
+            "sna" | "snapshot" => Format::Sna,
+            "dsk" | "do" | "dos33" => Format::Dsk,
             "hex" | "ihex" | "intel" => Format::Hex,
             "srec" | "s19" | "s28" | "s37" | "mot" => Format::Srec,
             _ => return None,

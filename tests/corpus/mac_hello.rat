@@ -1,0 +1,16 @@
+; rat dialect, Macintosh (68000): raw code
+.platform mac
+.org 0
+start:
+    lea msg(pc), a0
+    move.l #$12345678, d0
+    moveq #0, d1
+loop:
+    tst.b (a0)+
+    beq.s done
+    addq.l #1, d1
+    bra.s loop
+done:
+    rts
+msg: .text "Hello Macintosh"
+     .byte 0

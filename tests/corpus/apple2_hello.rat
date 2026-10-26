@@ -1,0 +1,24 @@
+; rat dialect, Apple IIe enhanced (65C02): DOS 3.3 disk with HELLO
+.platform apple2e
+.dsk name="HELLO", volume=254
+.org $2000
+start:
+    ldx #0
+loop:
+    lda msg,x
+    beq done
+    jsr $fded           ; COUT
+    inx
+    bra loop
+done:
+    stz $06
+    lda ($06)
+    inc a
+    phx
+    plx
+    trb $0300
+    bit #$80
+    jmp ($2000,x)
+.encoding "apple"
+msg: .text "HELLO APPLE II", 13
+     .byte 0
