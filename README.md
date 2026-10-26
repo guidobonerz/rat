@@ -74,6 +74,11 @@ downloaded file as blocked, run this in PowerShell:
 Unblock-File C:\Tools\rat\rat.exe
 ```
 
+The Linux and Windows binaries are compressed with [UPX](https://upx.github.io/).
+Some antivirus tools flag UPX-packed files as suspicious. If yours quarantines
+`rat.exe`, check it against `SHA256SUMS.txt` and add an exclusion, or build
+from source.
+
 ### Verifying downloads
 
 Each release contains `SHA256SUMS.txt`:

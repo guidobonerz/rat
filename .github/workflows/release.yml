@@ -23,9 +23,11 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             archive: tar.gz
+            upx: true
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             archive: tar.gz
+            upx: true
           - os: macos-latest
             target: aarch64-apple-darwin
             archive: tar.gz
@@ -35,6 +37,7 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             archive: zip
+            upx: true
     steps:
       - name: Checkout rat
         uses: actions/checkout@v4
@@ -60,6 +63,27 @@ jobs:
       - name: Build
         working-directory: rat
         run: cargo build --release -p rat-cli --target ${{ matrix.target }}
+
+      # UPX packing for Linux and Windows only. macOS is skipped because current
+      # UPX does not support it and packed binaries break Apple Silicon signing.
+      - name: Install UPX (Linux)
+        if: matrix.upx && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y upx-ucl
+
+      - name: Install UPX (Windows)
+        if: matrix.upx && runner.os == 'Windows'
+        run: choco install upx --no-progress -y
+
+      - name: Pack with UPX
+        if: matrix.upx
+        shell: bash
+        working-directory: rat
+        run: |
+          bin="target/${{ matrix.target }}/release/rat"
+          [ "$RUNNER_OS" = "Windows" ] && bin="$bin.exe"
+          upx --version | head -1
+          upx --best --lzma "$bin"
+          upx -t "$bin"
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
