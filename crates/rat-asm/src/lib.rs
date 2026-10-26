@@ -141,6 +141,15 @@ pub struct Output {
     pub data: Vec<u8>,
 }
 
+/// The addresses of a source line: what a statement of `file`, line `line` (1-based) emitted at `addr`.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct LineInfo {
+    pub file: String,
+    pub line: usize,
+    pub addr: u32,
+    pub size: usize,
+}
+
 #[derive(Debug)]
 pub struct AsmResult {
     pub ok: bool,
@@ -149,6 +158,8 @@ pub struct AsmResult {
     pub outputs: Vec<Output>,
     pub symbols: Vec<Symbol>,
     pub listing: String,
+    /// The source line of every address (recorded with `Options::listing`).
+    pub lines: Vec<LineInfo>,
     pub prints: Vec<String>,
     pub breakpoints: Vec<u32>,
     pub passes: u32,
@@ -391,6 +402,12 @@ fn drive(e: &mut engine::Engine<'_>) -> AsmResult {
         outputs.push(Output { name: f, format: "labels".into(), data: acme_labels(&symbols).into_bytes() });
     }
     let listing = listing(e);
+    let lines = e
+        .listing
+        .iter()
+        .filter(|l| !l.bytes.is_empty())
+        .map(|l| LineInfo { file: e.sources.get(l.file).map_or(String::new(), |f| f.name.clone()), line: l.line, addr: l.pc, size: l.bytes.len() })
+        .collect();
     AsmResult {
         ok,
         diagnostics: diags,
@@ -398,6 +415,7 @@ fn drive(e: &mut engine::Engine<'_>) -> AsmResult {
         outputs,
         symbols,
         listing,
+        lines,
         prints: e.prints.clone(),
         breakpoints: e.breaks.clone(),
         passes,

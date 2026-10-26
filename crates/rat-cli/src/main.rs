@@ -6,7 +6,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use rat_asm::{FsVfs, Options};
-use rat_core::Dialect;
+use rat_core::{Dialect, Severity};
 
 #[derive(Parser)]
 #[command(name = "rat", version, about = "rat assembles words: ACME, KickAssembler and rat syntax for 6502/6510/2A03/6507, 65816, SPC700, Z80, 6809, 68000/68020")]
@@ -151,7 +151,7 @@ fn main() -> ExitCode {
                 defines,
                 include_dirs: include,
                 max_passes: passes,
-                listing: listing.is_some(),
+                listing: listing.is_some() || json,
                 hunk_bases: Vec::new(),
             };
             let r = rat_asm::assemble(&opts, &FsVfs);
@@ -159,8 +159,38 @@ fn main() -> ExitCode {
                 println!("{p}");
             }
             eprint!("{}", r.render_diagnostics(color));
+            // --json: the summary also when the assembly failed - the diagnostics with file, line and column
+            let summary = |written: &[(String, String, usize)]| {
+                let diagnostics: Vec<serde_json::Value> = r
+                    .diagnostics
+                    .iter()
+                    .map(|d| {
+                        let loc = d.span.and_then(|s| r.sources.location(s));
+                        serde_json::json!({
+                            "severity": match d.severity { Severity::Error => "error", Severity::Warning => "warning", Severity::Info => "info" },
+                            "message": d.message,
+                            "file": loc.as_ref().map(|l| l.0.clone()),
+                            "line": loc.as_ref().map(|l| l.1),
+                            "column": loc.as_ref().map(|l| l.2),
+                        })
+                    })
+                    .collect();
+                serde_json::json!({
+                    "ok": r.ok,
+                    "passes": r.passes,
+                    "cpu": r.cpu,
+                    "platform": r.platform,
+                    "outputs": written.iter().map(|(p, f, n)| serde_json::json!({"file": p, "format": f, "size": n})).collect::<Vec<_>>(),
+                    "symbols": r.symbols,
+                    "diagnostics": diagnostics,
+                    "lines": r.lines,
+                })
+            };
             if !r.ok {
                 eprintln!("error: assembly failed with {} error(s)", r.errors());
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&summary(&[])).unwrap());
+                }
                 return ExitCode::FAILURE;
             }
             let mut written = Vec::new();
@@ -191,15 +221,7 @@ fn main() -> ExitCode {
                 let _ = write(&s, rat_asm::acme_labels(&r.symbols).as_bytes());
             }
             if json {
-                let v = serde_json::json!({
-                    "ok": r.ok,
-                    "passes": r.passes,
-                    "cpu": r.cpu,
-                    "platform": r.platform,
-                    "outputs": written.iter().map(|(p, f, n)| serde_json::json!({"file": p, "format": f, "size": n})).collect::<Vec<_>>(),
-                    "symbols": r.symbols,
-                });
-                println!("{}", serde_json::to_string_pretty(&v).unwrap());
+                println!("{}", serde_json::to_string_pretty(&summary(&written)).unwrap());
             } else {
                 for (p, f, n) in &written {
                     eprintln!("wrote {p} ({f}, {n} bytes) in {} pass(es)", r.passes);

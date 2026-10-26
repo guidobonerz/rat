@@ -26,6 +26,8 @@ rat reads three dialects and can convert between them:
 * **ACME**: `!` pseudo-ops, labels without colons, `.local` and `@cheap`
   labels, anonymous `-`/`+` labels, `+macro` calls, `!zone`, `!for`,
   `!if`, `!do`, `!pseudopc`, `!convtab`, `!binary`, `!source`, `!to`, …
+  For 68000 sources also the Motorola data directives without `!`: `dc.b`/`dc.w`/`dc.l`
+  (big endian), `ds.b`/`ds.w`/`ds.l count[, fill]` and `even`.
 * **KickAssembler**: `.` directives, `label:`, `!multi:` labels, `{ }`
   scopes, and the whole script language: `.var`/`.const`/`.eval`,
   functions, macros, pseudocommands, lists, hashtables, structs,

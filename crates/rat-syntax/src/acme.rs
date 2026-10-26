@@ -164,6 +164,39 @@ fn statement(p: &mut Parser<'_>, out: &mut Vec<Stmt>) -> PResult<()> {
         }
         // `name:` is always a label, even when it spells a mnemonic
         let colon = p.c.is(":") && p.c.glued_at(0);
+        // the Motorola data directives of 68000 sources, as ACME-style assemblers take them: `dc.b/w/l`
+        // (big endian), `ds.b/w/l count[, fill]`, `even`
+        if name.kind == NameKind::Plain && !colon {
+            let lower = name.text.to_ascii_lowercase();
+            if (lower == "dc" || lower == "ds") && p.c.is(".") && p.c.glued_at(0) && p.c.glued_at(1) {
+                let size = match &p.c.peek_at(1).tok {
+                    Tok::Ident(sx) => match sx.to_ascii_lowercase().as_str() {
+                        "b" => 1,
+                        "w" => 2,
+                        "l" => 4,
+                        _ => 0,
+                    },
+                    _ => 0,
+                };
+                if size > 0 {
+                    p.c.next();
+                    p.c.next();
+                    let kind = if lower == "dc" {
+                        data(p, size, Some(Endian::Big))?
+                    } else {
+                        let count = p.expr()?;
+                        let value = if p.c.eat(",") { Some(p.expr()?) } else { None };
+                        StmtKind::Fill { count, value, size, index_var: None }
+                    };
+                    out.push(Stmt::new(kind, p.c.span_from(start)));
+                    return Ok(());
+                }
+            }
+            if lower == "even" && p.stmt_end() {
+                out.push(Stmt::new(StmtKind::Align { kind: AlignKind::Multiple(Expr::int(2, nspan)), fill: None }, nspan));
+                return Ok(());
+            }
+        }
         if name.kind == NameKind::Plain && !colon && p.is_mnemonic(&name.text) {
             // `lda+2 $12`: forced operand size
             let mut suffix = None;

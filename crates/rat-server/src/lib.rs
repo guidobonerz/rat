@@ -95,6 +95,16 @@ pub struct AssembleResponse {
     pub listing: Option<String>,
     /// VICE monitor labels (loadable by mimic's debugger).
     pub vice_labels: String,
+    /// The source line of every address (with `listing`).
+    pub lines: Vec<LineOut>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct LineOut {
+    pub file: String,
+    pub line: usize,
+    pub addr: u32,
+    pub size: usize,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -196,7 +206,7 @@ fn bad(status: StatusCode, msg: impl Into<String>) -> Response {
 #[openapi(
     info(title = "rat assembler API", description = "Assemble, disassemble and convert ACME / KickAssembler / rat sources for 6502, 65C02, 65816, SPC700, Z80, 6809 and 68000/68020."),
     paths(assemble, disassemble, convert, cpus, platforms, formats, health),
-    components(schemas(AssembleRequest, FileContent, AssembleResponse, OutputFile, DiagnosticOut, SymbolOut, DisassembleRequest, DisassembleResponse, DisasmLine, ConvertRequest, ConvertResponse, CpuOut, PlatformOut, DirectiveOut, FormatOut, ErrorOut))
+    components(schemas(AssembleRequest, FileContent, AssembleResponse, OutputFile, DiagnosticOut, SymbolOut, LineOut, DisassembleRequest, DisassembleResponse, DisasmLine, ConvertRequest, ConvertResponse, CpuOut, PlatformOut, DirectiveOut, FormatOut, ErrorOut))
 )]
 pub struct ApiDoc;
 
@@ -285,6 +295,7 @@ fn do_assemble(req: AssembleRequest) -> Result<AssembleResponse, String> {
         prints: r.prints.clone(),
         listing: if opts.listing { Some(r.listing.clone()) } else { None },
         vice_labels: rat_asm::vice_labels(&r.symbols, &r.breakpoints),
+        lines: r.lines.iter().map(|l| LineOut { file: l.file.clone(), line: l.line, addr: l.addr, size: l.size }).collect(),
     })
 }
 
