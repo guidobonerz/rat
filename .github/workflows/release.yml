@@ -1,0 +1,126 @@
+name: Release
+
+# Runs only when a version tag such as v0.1.0 is pushed.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    steps:
+      - name: Checkout rat
+        uses: actions/checkout@v4
+        with:
+          path: rat
+
+      # tests/Cargo.toml references ../../mimic; cargo needs it to resolve the workspace.
+      - name: Checkout MIMIC
+        uses: actions/checkout@v4
+        with:
+          repository: guidobonerz/MIMIC
+          path: mimic
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rat
+          key: ${{ matrix.target }}
+
+      - name: Build
+        working-directory: rat
+        run: cargo build --release -p rat-cli --target ${{ matrix.target }}
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        working-directory: rat
+        run: |
+          name="rat-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir -p "dist/$name"
+          cp "target/${{ matrix.target }}/release/rat" README.md "dist/$name/"
+          chmod +x "dist/$name/rat"
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          echo "ASSET=rat/dist/$name.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        working-directory: rat
+        run: |
+          $name = "rat-$env:GITHUB_REF_NAME-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force "dist/$name" | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/rat.exe", README.md "dist/$name/"
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
+          "ASSET=rat/dist/$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rat-${{ matrix.target }}
+          path: ${{ env.ASSET }}
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            ## Running the binary
+
+            **Linux / macOS**: unpack, make it executable and move it onto your PATH:
+            ```
+            tar -xzf rat-*.tar.gz && cd rat-*/
+            chmod +x rat
+            sudo mv rat /usr/local/bin/
+            ```
+            **macOS only**: the binary is not notarized. Remove the quarantine flag first:
+            ```
+            xattr -d com.apple.quarantine rat
+            ```
+            **Windows**: unpack the zip, add the folder to your `PATH`, and run `rat --help`
+            in a new terminal. If SmartScreen warns, choose *More info > Run anyway*.
+
+            Verify downloads against `SHA256SUMS.txt`. See the README for details.

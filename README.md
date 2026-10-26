@@ -19,6 +19,81 @@ The encoding tables are ported from mimic's cores. The tests check every
 opcode against mimic's disassemblers (about 68,000 instructions; see
 [Testing](#testing)).
 
+## Installation
+
+Prebuilt binaries for Linux, macOS and Windows are attached to each
+[GitHub release](https://github.com/guidobonerz/rat/releases). Download the
+archive for your system and unpack it.
+
+### Linux
+
+```
+tar -xzf rat-v0.1.0-x86_64-unknown-linux-gnu.tar.gz
+cd rat-v0.1.0-x86_64-unknown-linux-gnu
+chmod +x rat                      # only needed if the executable bit got lost
+sudo mv rat /usr/local/bin/       # or ~/.local/bin, if that is on your PATH
+rat --help
+```
+
+Use the `aarch64-unknown-linux-gnu` archive on ARM64 machines such as a
+Raspberry Pi 4/5 with a 64-bit OS.
+
+### macOS
+
+Pick `aarch64-apple-darwin` for Apple Silicon (M1 and later) and
+`x86_64-apple-darwin` for Intel Macs.
+
+```
+tar -xzf rat-v0.1.0-aarch64-apple-darwin.tar.gz
+cd rat-v0.1.0-aarch64-apple-darwin
+chmod +x rat
+xattr -d com.apple.quarantine rat # the binary is not signed or notarized
+sudo mv rat /usr/local/bin/
+rat --help
+```
+
+Without the `xattr` step, macOS blocks the binary with a message that it
+"cannot be opened because the developer cannot be verified". As an
+alternative, try to run it once, then allow it under
+*System Settings → Privacy & Security → Open Anyway*.
+
+### Windows
+
+Unpack the zip, for example to `C:\Tools\rat`. Then add that folder to your
+`PATH` so `rat` works in any terminal:
+
+```
+setx PATH "%PATH%;C:\Tools\rat"
+```
+
+Open a new terminal and run `rat --help`. If SmartScreen warns about an
+unrecognized app, click *More info → Run anyway*. If Windows flags the
+downloaded file as blocked, run this in PowerShell:
+
+```
+Unblock-File C:\Tools\rat\rat.exe
+```
+
+### Verifying downloads
+
+Each release contains `SHA256SUMS.txt`:
+
+```
+sha256sum -c SHA256SUMS.txt --ignore-missing          # Linux
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing      # macOS
+Get-FileHash rat-v0.1.0-x86_64-pc-windows-msvc.zip    # Windows, compare by hand
+```
+
+### Building from source
+
+```
+cargo install --path crates/rat-cli
+```
+
+This puts `rat` in `~/.cargo/bin`. The workspace expects the
+[mimic](https://github.com/guidobonerz/MIMIC) repository checked out next to
+this one, in a folder named `mimic`.
+
 ## Source dialects
 
 rat reads three dialects and can convert between them:

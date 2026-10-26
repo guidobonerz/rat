@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout rat
+        uses: actions/checkout@v4
+        with:
+          path: rat
+
+      # tests/Cargo.toml references ../../mimic, so MIMIC must sit next to rat.
+      - name: Checkout MIMIC
+        uses: actions/checkout@v4
+        with:
+          repository: guidobonerz/MIMIC
+          path: mimic
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rat
+
+      - name: Build
+        working-directory: rat
+        run: cargo build --workspace --release
+
+      - name: Test
+        working-directory: rat
+        run: cargo test --workspace --release
