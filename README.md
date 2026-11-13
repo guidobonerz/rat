@@ -6,7 +6,7 @@
 
 rat assembles text. It is a multi-CPU, multi-dialect assembler written in
 Rust, built to produce binaries for every CPU that the
-[mimic](../mimic) emulator runs. You can use it as a plain CLI or as a REST
+[mimic](https://github.com/guidobonerz/mimic) emulator runs. You can use it as a plain CLI or as a REST
 API.
 
 | CPU | Variants | Byte order | Used by |
