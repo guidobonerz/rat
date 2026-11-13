@@ -17,6 +17,7 @@ reset:  sei
 @wait:  bit $2002             ; @local / .local: local to the last global label
         bpl @wait
 -       jmp -                 ; anonymous labels like ACME
+nmi:    rti
 .org $fffa
         .word nmi, reset, nmi
 ```

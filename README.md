@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Retro%20Neon%20RAT%20Tech%20Logo.png" alt="rat — rat assembles text" width="560">
+</p>
+
 # rat
 
 rat assembles text. It is a multi-CPU, multi-dialect assembler written in
@@ -12,7 +16,7 @@ API.
 | MEGA65 45GS02 | `45gs02` (4510/65CE02 with Q instructions, flat `[zp],z`, long branches) | little | MEGA65 |
 | WDC 65C816 | `65816` | little | SNES |
 | Sony SPC700 | `spc700` | little | SNES audio |
-| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ZX Spectrum, ColecoVision, MSX, TRS-80, C128 |
+| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ZX Spectrum, ColecoVision, MSX, MSX2, TRS-80, C128 |
 | Intel 8080 | `8080` (Intel mnemonics) | little | IMSAI 8080 |
 | TI TMS9900 | `tms9900` | big | TI-99/4A |
 | ARM2 | `arm2` (26-bit, Acorn mnemonics) | little | Acorn Archimedes |
@@ -22,6 +26,21 @@ API.
 The encoding tables are ported from mimic's cores. The tests check every
 opcode against mimic's disassemblers (about 180,000 instructions; see
 [Testing](#testing)).
+
+## Documentation
+
+* **User guide (PDF):** [English](docs/rat-user-guide-en.pdf) ·
+  [Deutsch](docs/rat-user-guide-de.pdf). Part I explains how to use rat
+  (command line, dialects, platforms, an example per machine, conversion,
+  REST API); Part II is the reference of the rat dialect, the CPUs,
+  platforms, formats and options.
+* **The rat dialect:** [docs/rat-syntax.md](docs/rat-syntax.md).
+* `rat --help`, `rat cpus`, `rat platforms` and `rat formats` print the
+  lists from the program itself.
+
+The PDFs are built from `tools/guide_en.py` and `tools/guide_de.py` with
+`python tools/user_guide.py` (needs `pip install reportlab`). Keep both
+texts in step with this README when CPUs, platforms or options change.
 
 ## Installation
 
@@ -153,6 +172,10 @@ is an error that names the platform you need. KickAssembler and ACME
 sources default to `c64`, so existing sources build unchanged; rat
 sources start on `generic`.
 
+The default origin applies to the platform a build starts with (`-p` or the
+dialect default). After a `.platform` line in the source, set the origin
+with `.org`.
+
 | Platform | CPU | Formats (first = default) | Platform directives |
 |---|---|---|---|
 | `c64` | 6510 | prg, d64, crt | `basicupstart`, `crt`, `disk`; `LoadSid()`, `LoadPicture()` |
@@ -166,7 +189,7 @@ sources start on `generic`.
 | `spectrum` | z80 | tap, sna | `tap name= exec= loader=` (BASIC loader `CLEAR/LOAD ""CODE/RANDOMIZE USR`), `sna exec= sp= border= im= ei=` |
 | `mega65` | 45gs02 | prg, d64 | `basicupstart` (BASIC 65 `BANK 0:SYS`), `disk`; `LoadSid()`, `LoadPicture()` |
 | `bbc`, `bbcmaster` | 6502, 65c02 | ssd (DFS disk with the program as a file) | `ssd name= exec= title= boot=` (`boot=true`: `!BOOT`, Shift+BREAK runs it) |
-| `msx` | z80 | bin (cartridge ROM), cas (`BLOAD"CAS:",R` file) | `msx.header init` (`AB` cartridge header), `cas name= exec=` |
+| `msx`, `msx2` | z80 | bin (cartridge ROM), cas (`BLOAD"CAS:",R` file) | `msx.header init` (`AB` cartridge header), `cas name= exec=` |
 | `trs80` | z80 | cas (Level II `SYSTEM` tape), cmd (TRSDOS load module) | `cas name= exec=`, `cmd exec` |
 | `imsai` | 8080 | bin | |
 | `ti99` | tms9900 | bin (cartridge ROM at $6000) | `ti99.header "TITLE", start` (cartridge header with one menu entry) |
@@ -251,6 +274,12 @@ assembles to identical bytes.
   Apple IIe).
 * There is no separate 4510 or 65CE02 CPU: `!cpu 65ce02`, `4510` and
   `4502` select the 45GS02, a superset of both.
+* `msx` and `msx2` share one platform definition (same CPU, cartridge
+  header and CAS format); there are no MSX2-specific directives or a disk
+  image writer.
+* Amiga: there is no ADF or hard disk (HDF) image writer.
+* mimic's own Logophor 16 (CPU ADA) is not a rat target; it has its
+  assembler in mimic.
 * Archimedes, TI-99/4A and IMSAI output is raw code (`bin`, `hex`,
   `srec`): there is no RISC OS ADFS image, TI disk or cassette writer.
 * Macintosh output is raw code (`bin`, `hex`, `srec`); there is no
@@ -271,6 +300,8 @@ crates/
   rat-server    REST API
   rat-cli       the `rat` binary
 tests/          round trips against mimic, corpus with golden outputs
+tools/          builder of the PDF user guide (English and German)
+docs/           rat-syntax.md, the user guide PDFs
 ```
 
 **Passes.** The engine runs the IR once per pass. A forward reference

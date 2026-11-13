@@ -225,11 +225,11 @@ pub(crate) fn directive(e: &mut Engine<'_>, plat: &'static Platform, name: &str,
                 boot: e.arg_bool(args, "boot", 3),
             });
         }
-        ("msx" | "trs80", "cas") => {
+        ("msx" | "msx2" | "trs80", "cas") => {
             e.plat.cas = Some(rat_output::tape::TapeOptions { name: e.arg_str(args, "name", 0).unwrap_or_default(), exec: e.arg_int(args, "exec", 1).map(|v| v as u16) });
         }
         ("trs80", "cmd") => e.plat.cmd_exec = e.arg_int(args, "exec", 0).map(|v| v as u16),
-        ("msx", "header") => {
+        ("msx" | "msx2", "header") => {
             let a = e.arg_int(args, "init", 0).map_or(Value::Undef, Value::Int);
             return e.prelude_macro(plat, "MsxHeader", vec![a], span);
         }

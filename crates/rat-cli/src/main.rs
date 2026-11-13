@@ -9,7 +9,7 @@ use rat_asm::{FsVfs, Options};
 use rat_core::{Dialect, Severity};
 
 #[derive(Parser)]
-#[command(name = "rat", version, about = "rat assembles words: ACME, KickAssembler and rat syntax for 6502/6510/2A03/6507, 65816, SPC700, Z80, 6809, 68000/68020")]
+#[command(name = "rat", version, about = "rat assembles words: ACME, KickAssembler and rat syntax for 6502/6510/2A03/6507, 65C02, 45GS02, 65816, SPC700, Z80, 8080, 6809, 68000/68020, TMS9900, ARM2")]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -33,7 +33,7 @@ enum Cmd {
         /// Source dialect of the main file: acme, kick, rat.
         #[arg(short, long)]
         syntax: Option<String>,
-        /// Output format (prg, bin, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, hex, srec).
+        /// Output format (prg, bin, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, tap, sna, dsk, ssd, cas, cmd, hex, srec; see `rat formats`).
         #[arg(short, long)]
         format: Option<String>,
         /// Define a symbol: NAME or NAME=VALUE (also in cmdLineVars).

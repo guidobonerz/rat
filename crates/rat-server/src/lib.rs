@@ -37,7 +37,7 @@ pub struct AssembleRequest {
     pub files: BTreeMap<String, FileContent>,
     /// Path of the main source in `files`.
     pub main: String,
-    /// CPU (6502, 6510, 2a03, 6507, 65c02, 65816, spc700, z80, 6809, 68000, 68020).
+    /// CPU (6502, 6510, 2a03, 6507, 65c02, 45gs02, 65816, spc700, z80, 8080, 6809, 68000, 68020, tms9900, arm2).
     pub cpu: Option<String>,
     /// Platform (c64, nes, snes, amiga, cpc, ...).
     pub platform: Option<String>,

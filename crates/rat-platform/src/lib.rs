@@ -432,7 +432,23 @@ platforms![
     Platform {
         id: "msx",
         aliases: &["msx1"],
-        name: "MSX",
+        name: "MSX (MSX1)",
+        cpu: "z80",
+        formats: &[Format::Bin, Format::Cas],
+        default_org: Some(0x4000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: MSX_DIRS,
+        functions: &[],
+        prelude: Some(PRELUDE_MSX),
+    },
+    // Same CPU, cartridge header and cassette format as the MSX1; the
+    // V9938, memory mapper and sub ROM are reached through ports and BIOS
+    // calls, not through the assembler.
+    Platform {
+        id: "msx2",
+        aliases: &["msx-2", "v9938"],
+        name: "MSX2",
         cpu: "z80",
         formats: &[Format::Bin, Format::Cas],
         default_org: Some(0x4000),

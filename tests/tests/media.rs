@@ -91,6 +91,11 @@ fn new_platforms_pick_their_cpu_and_format() {
 .org $2100
  ldq $10
 ", "prg", &[0x00, 0x21, 0x42, 0x42, 0xa5, 0x10]),
+        (".platform msx2
+.org $4000
+.header init
+init: ret
+", "bin", &[0x41, 0x42, 0x10, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xc9]),
         (".platform trs80
 .cmd start
 .org $5200
