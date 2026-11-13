@@ -72,6 +72,9 @@ pub(crate) struct PlatformState {
     pub tap: Option<rat_output::spectrum::TapOptions>,
     pub sna: Option<rat_output::spectrum::SnaOptions>,
     pub dsk: Option<rat_output::dos33::DskOptions>,
+    pub ssd: Option<rat_output::bbc::SsdOptions>,
+    pub cas: Option<rat_output::tape::TapeOptions>,
+    pub cmd_exec: Option<u16>,
 }
 
 pub(crate) struct ListLine {
@@ -792,7 +795,7 @@ impl<'o> Engine<'o> {
     pub fn assemble_instr(&mut self, s: &Stmt, ins: &Instr) -> R {
         let cpu = self.cpu;
         let mut operand: &[Token] = &ins.operand;
-        let is65 = matches!(cpu.info().id, "6502" | "6502ni" | "6510" | "2a03" | "6507" | "65816");
+        let is65 = matches!(cpu.info().id, "6502" | "6502ni" | "6510" | "2a03" | "6507" | "65c02" | "45gs02" | "65816");
         if is65 && operand.len() > 2 && operand[1].is_punct(":") {
             if let Tok::Ident(n) = &operand[0].tok {
                 let at = i64::from(self.pc()) + 1;
@@ -800,7 +803,7 @@ impl<'o> Engine<'o> {
                 operand = &operand[2..];
             }
         }
-        let substituted = self.substitute_cmdargs(operand, ins.dialect);
+        let substituted = self.substitute_cmdargs(operand, ins.dialect, is65);
         let lenient = ins.dialect == Dialect::Kick || substituted.as_slice() != operand;
         let toks = substituted;
         let site = self.site(s);
@@ -835,7 +838,7 @@ impl<'o> Engine<'o> {
 
     /// An operand that is just a pseudocommand argument becomes that
     /// argument's tokens (Kick `lda arg` inside a pseudocommand).
-    fn substitute_cmdargs(&mut self, toks: &[Token], dialect: Dialect) -> Vec<Token> {
+    fn substitute_cmdargs(&mut self, toks: &[Token], dialect: Dialect, calls_ok: bool) -> Vec<Token> {
         if toks.len() == 1 {
             if let Tok::Ident(n) = &toks[0].tok {
                 if let Some(Value::CmdArg(c)) = self.lookup(&Name::plain(n.clone())) {
@@ -844,7 +847,8 @@ impl<'o> Engine<'o> {
             }
         }
         // a function returning a CmdArgument: `lda _16bitnextArgument(arg)`
-        let calls = toks.windows(2).any(|w| matches!(w[0].tok, Tok::Ident(_)) && w[1].is_punct("(") && !w[1].space_before);
+        // (65xx only: elsewhere `name(` is operand syntax, as in the TMS9900's `@table(r1)`)
+        let calls = calls_ok && toks.windows(2).any(|w| matches!(w[0].tok, Tok::Ident(_)) && w[1].is_punct("(") && !w[1].space_before);
         if calls && !toks.first().is_some_and(|t| t.is_punct("#") || t.is_punct("(")) {
             if let Ok(e) = rat_syntax::parse_expr_tokens(dialect, toks) {
                 let before = self.diags.len();

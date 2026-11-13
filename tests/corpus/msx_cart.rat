@@ -1,0 +1,18 @@
+; MSX: a 16 KB cartridge at $4000
+.platform msx
+.org $4000
+.header init
+
+CHPUT = $00a2
+
+init:   ld hl, text
+@loop:  ld a, (hl)
+        or a
+        jr z, @halt
+        call CHPUT
+        inc hl
+        jr @loop
+@halt:  di
+        halt
+text:   .asciiz "Hello from rat"
+        .fill $8000 - *, $ff

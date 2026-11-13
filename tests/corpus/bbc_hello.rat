@@ -1,0 +1,17 @@
+; BBC Micro: an SSD image that starts with Shift+BREAK
+.platform bbc
+.ssd title="RAT", boot=true, exec=start
+
+OSWRCH = $ffee
+OSNEWL = $ffe7
+
+.org $1900
+start:  ldx #0
+@loop:  lda text,x
+        beq @done
+        jsr OSWRCH
+        inx
+        bne @loop
+@done:  jsr OSNEWL
+        rts
+text:   .asciiz "Hello from rat"

@@ -1,0 +1,32 @@
+; TI-99/4A: a cartridge ROM at $6000 that fills the screen
+.platform ti99
+.org $6000
+.header "RAT DEMO", start
+
+VDPWD = $8c00
+VDPWA = $8c02
+WS    = $8300
+
+start:  limi 0
+        lwpi WS
+        li r0, $4000            ; VDP write address 0
+        swpb r0
+        movb r0, @VDPWA
+        swpb r0
+        movb r0, @VDPWA
+        li r1, text
+        li r2, textend - text
+loop:   movb *r1+, @VDPWD
+        dec r2
+        jne loop
+        clr r3
+        inc @count(r3)
+        bl @sub
+done:   jmp done
+sub:    ai r3, 2
+        sla r3, 4
+        rt
+count:  .word 0
+text:   .text "HELLO FROM RAT"
+textend:
+        .even

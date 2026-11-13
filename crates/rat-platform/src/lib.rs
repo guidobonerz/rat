@@ -106,6 +106,20 @@ const SPECTRUM_DIRS: &[DirSpec] = &[
     DirSpec { name: "sna", args: "exec=, sp=, border=, im=, ei=", description: "SNA output: entry point (default: lowest address), stack, border colour, interrupt mode" },
 ];
 const APPLE2_DIRS: &[DirSpec] = &[DirSpec { name: "dsk", args: "name=, volume=, type=, locked=", description: "DSK output: catalog name, volume number (254), DOS file type byte ($04 binary)" }];
+const BBC_DIRS: &[DirSpec] = &[DirSpec { name: "ssd", args: "name=, exec=, title=, boot=", description: "SSD output: DFS file name, execution address, disc title; boot=true names the file !BOOT and sets *OPT 4,2 (Shift+BREAK runs it)" }];
+const MSX_DIRS: &[DirSpec] = &[
+    DirSpec { name: "header", args: "init", description: "cartridge header (`AB`, INIT address, 12 zero bytes)" },
+    DirSpec { name: "cas", args: "name=, exec=", description: "CAS output: name and start address of the BLOAD file" },
+];
+const TRS80_DIRS: &[DirSpec] = &[
+    DirSpec { name: "cas", args: "name=, exec=", description: "CAS output: name and entry point of the SYSTEM tape" },
+    DirSpec { name: "cmd", args: "exec", description: "CMD output: entry point of the load module" },
+];
+const TI99_DIRS: &[DirSpec] = &[DirSpec { name: "header", args: "title, start", description: "cartridge header at $6000 with one program entry (name in the selection list, start address)" }];
+const MEGA65_DIRS: &[DirSpec] = &[
+    DirSpec { name: "basicupstart", args: "address", description: "BASIC 65 line `10 BANK 0:SYS address` at $2001, code continues after it" },
+    DirSpec { name: "disk", args: "[filename=, name=, id=] { [name=, type=, segments=] ... }", description: "build a D64 disk image (KickAssembler .disk)" },
+];
 
 const NONE: &[DirSpec] = &[];
 
@@ -377,6 +391,110 @@ platforms![
         prelude: None,
     },
     Platform {
+        id: "mega65",
+        aliases: &["m65", "c65"],
+        name: "MEGA65",
+        cpu: "45gs02",
+        formats: &[Format::Prg, Format::D64],
+        default_org: Some(0x2001),
+        basic_start: Some(0x2001),
+        encoding: "petscii_mixed",
+        directives: MEGA65_DIRS,
+        functions: CBM_FUNCS,
+        prelude: Some(cbm::PRELUDE_MEGA65),
+    },
+    Platform {
+        id: "bbc",
+        aliases: &["bbcmicro", "bbcb", "bbcbplus", "beeb"],
+        name: "Acorn BBC Micro Model B / B+",
+        cpu: "6502",
+        formats: &[Format::Ssd],
+        default_org: Some(0x1900),
+        basic_start: None,
+        encoding: "ascii",
+        directives: BBC_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "bbcmaster",
+        aliases: &["master", "master128"],
+        name: "Acorn BBC Master 128 (65SC12)",
+        cpu: "65c02",
+        formats: &[Format::Ssd],
+        default_org: Some(0x1900),
+        basic_start: None,
+        encoding: "ascii",
+        directives: BBC_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "msx",
+        aliases: &["msx1"],
+        name: "MSX",
+        cpu: "z80",
+        formats: &[Format::Bin, Format::Cas],
+        default_org: Some(0x4000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: MSX_DIRS,
+        functions: &[],
+        prelude: Some(PRELUDE_MSX),
+    },
+    Platform {
+        id: "trs80",
+        aliases: &["trs-80", "trs80m1", "trs80m3", "model1", "model3"],
+        name: "Tandy TRS-80 Model I / III",
+        cpu: "z80",
+        formats: &[Format::Cas, Format::Cmd],
+        default_org: Some(0x5200),
+        basic_start: None,
+        encoding: "ascii",
+        directives: TRS80_DIRS,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "imsai",
+        aliases: &["imsai8080", "s100"],
+        name: "IMSAI 8080",
+        cpu: "8080",
+        formats: &[Format::Bin],
+        default_org: Some(0x0100),
+        basic_start: None,
+        encoding: "ascii",
+        directives: NONE,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
+        id: "ti99",
+        aliases: &["ti994a", "ti-99", "ti-99/4a", "ti99/4a"],
+        name: "Texas Instruments TI-99/4A",
+        cpu: "tms9900",
+        formats: &[Format::Bin],
+        default_org: Some(0x6000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: TI99_DIRS,
+        functions: &[],
+        prelude: Some(PRELUDE_TI99),
+    },
+    Platform {
+        id: "archimedes",
+        aliases: &["arc", "a305", "a310", "a440", "a3000", "riscos"],
+        name: "Acorn Archimedes A305/A310/A440/A3000",
+        cpu: "arm2",
+        formats: &[Format::Bin],
+        default_org: Some(0x8000),
+        basic_start: None,
+        encoding: "ascii",
+        directives: NONE,
+        functions: &[],
+        prelude: None,
+    },
+    Platform {
         id: "sim6502",
         aliases: &["sim"],
         name: "mimic sim6502 test machine",
@@ -414,6 +532,8 @@ pub fn by_namespace(ns: &str) -> Option<&'static Platform> {
         "hunk" => "amiga",
         "tap" | "sna" => "spectrum",
         "dsk" | "dos33" => "apple2",
+        "ssd" | "dfs" => "bbc",
+        "cmd" => "trs80",
         _ => return by_name(&n),
     };
     by_name(id)
@@ -436,5 +556,25 @@ const PRELUDE_COLECO: &str = r#"
     .word 0, 0, 0, 0
     .word start
     .fill 21, 0
+}
+"#;
+
+const PRELUDE_MSX: &str = r#"
+.macro MsxHeader(init) {
+    .text "AB"
+    .word init
+    .fill 12, 0
+}
+"#;
+
+const PRELUDE_TI99: &str = r#"
+.macro Ti99Header(title, start) {
+    .byte $aa, 1, 0, 0
+    .word 0, ti99Programs, 0, 0, 0, 0
+ti99Programs:
+    .word 0, start
+    .byte title.size()
+    .text title
+    .align 2
 }
 "#;

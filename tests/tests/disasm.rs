@@ -19,7 +19,7 @@ fn asm(cpu: &str, text: &str, prelude: &str) -> Result<Vec<u8>, String> {
 fn first(cpu: &str, bytes: &[u8], wide: bool) -> Option<String> {
     let lines = disassemble(cpu, bytes, ORG, wide, wide).ok()?;
     let (_, _, t) = lines.into_iter().next()?;
-    (!t.starts_with(".byte") && !t.starts_with("dc.w")).then_some(t)
+    (!t.starts_with(".byte") && !t.starts_with("dc.w") && !t.starts_with(".word") && !t.starts_with(".long")).then_some(t)
 }
 
 fn check(cpu: &str, cases: impl Iterator<Item = Vec<u8>>, prelude: &str, wide: bool) {
@@ -88,4 +88,28 @@ fn m68k() {
     check("68000", cases, "", false);
     let cases = (0..=0xffffu32).step_by(11).map(|op| vec![(op >> 8) as u8, op as u8, 0x10, 0x04, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40]);
     check("68020", cases, "", false);
+}
+
+#[test]
+fn i8080() {
+    check("8080", (0..=255u8).map(|o| vec![o, 0x34, 0x12]), "", false);
+}
+
+#[test]
+fn tms9900() {
+    let cases = (0..=0xffffu32).step_by(3).map(|op| vec![(op >> 8) as u8, op as u8, 0x12, 0x34, 0x56, 0x78]);
+    check("tms9900", cases, "", false);
+}
+
+#[test]
+fn m45gs02() {
+    let cases = (0..=255u8).flat_map(|o| vec![vec![o, 0x34, 0x12], vec![0x42, 0x42, o, 0x34, 0x12], vec![0xea, o, 0x34, 0x12], vec![0x42, 0x42, 0xea, o, 0x34]]);
+    check("45gs02", cases, "", false);
+}
+
+#[test]
+fn arm2() {
+    let low = [0x0_0000u32, 0x1_2003, 0x2_3145, 0x4_5fff, 0x3_1492, 0xf_e0d1, 0x7_8f60, 0x9_a06b, 0x6_7234, 0x2_1ffc];
+    let cases = (0..0x1000u32).flat_map(move |top| low.map(|l| (top << 20 | l).to_le_bytes().to_vec()));
+    check("arm2", cases, "", false);
 }

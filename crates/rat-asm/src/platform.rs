@@ -217,6 +217,27 @@ pub(crate) fn directive(e: &mut Engine<'_>, plat: &'static Platform, name: &str,
             o.locked = e.arg_bool(args, "locked", 3);
             e.plat.dsk = Some(o);
         }
+        ("bbc" | "bbcmaster", "ssd") => {
+            e.plat.ssd = Some(rat_output::bbc::SsdOptions {
+                name: e.arg_str(args, "name", 0).unwrap_or_default(),
+                exec: e.arg_int(args, "exec", 1).map(|v| v as u32),
+                title: e.arg_str(args, "title", 2).unwrap_or_default(),
+                boot: e.arg_bool(args, "boot", 3),
+            });
+        }
+        ("msx" | "trs80", "cas") => {
+            e.plat.cas = Some(rat_output::tape::TapeOptions { name: e.arg_str(args, "name", 0).unwrap_or_default(), exec: e.arg_int(args, "exec", 1).map(|v| v as u16) });
+        }
+        ("trs80", "cmd") => e.plat.cmd_exec = e.arg_int(args, "exec", 0).map(|v| v as u16),
+        ("msx", "header") => {
+            let a = e.arg_int(args, "init", 0).map_or(Value::Undef, Value::Int);
+            return e.prelude_macro(plat, "MsxHeader", vec![a], span);
+        }
+        ("ti99", "header") => {
+            let title = e.arg_str(args, "title", 0).map_or(Value::Undef, Value::str);
+            let start = e.arg_int(args, "start", 1).map_or(Value::Undef, Value::Int);
+            return e.prelude_macro(plat, "Ti99Header", vec![title, start], span);
+        }
         ("coleco", "header") => {
             let a = e.arg_int(args, "start", 0).map_or(Value::Undef, Value::Int);
             return e.prelude_macro(plat, "ColecoHeader", vec![a], span);

@@ -458,9 +458,16 @@ pub fn disassemble(cpu: &str, bytes: &[u8], org: u32, m16: bool, x16: bool) -> R
                 i += n;
             }
             _ => {
-                let step = if c.endian() == rat_core::Endian::Big && c.info().addr_bits == 24 { 2.min(bytes.len() - i) } else { 1 };
+                let step = c.unit().min(bytes.len() - i);
                 let v: Vec<u8> = bytes[i..i + step].to_vec();
-                let text = if step == 2 { format!("dc.w ${:02x}{:02x}", v[0], v[1]) } else { format!(".byte ${:02x}", v[0]) };
+                let n = v.iter().fold(0u32, |a, &b| a << 8 | u32::from(b));
+                let n = if c.endian() == rat_core::Endian::Big { n } else { n.swap_bytes() >> (32 - 8 * step as u32) };
+                let text = match (step, c.info().addr_bits) {
+                    (2, 24) => format!("dc.w ${n:04x}"),
+                    (2, _) => format!(".word ${n:04x}"),
+                    (4, _) => format!(".long ${n:08x}"),
+                    _ => format!(".byte {}", v.iter().map(|b| format!("${b:02x}")).collect::<Vec<_>>().join(", ")),
+                };
                 out.push((addr, v, text));
                 i += step;
             }

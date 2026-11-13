@@ -1,0 +1,14 @@
+; TRS-80 Model I: a SYSTEM tape (SYSTEM, HELLO, /)
+.platform trs80
+.cas name="HELLO", exec=start
+
+VIDEO = $3c00
+
+.org $5200
+start:  ld hl, text
+        ld de, VIDEO
+        ld bc, textend - text
+        ldir
+@wait:  jr @wait
+text:   .text "HELLO FROM RAT"
+textend:

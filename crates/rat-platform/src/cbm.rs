@@ -34,6 +34,24 @@ pub const PRELUDE_VIC20: &str = basic_prelude!("$1001", "$100d");
 pub const PRELUDE_PET: &str = basic_prelude!("$0401", "$040d");
 pub const PRELUDE_PLUS4: &str = basic_prelude!("$1001", "$100d");
 
+/// MEGA65 (BASIC 65): `10 BANK 0:SYS address`.
+pub const PRELUDE_MEGA65: &str = r#"
+.macro BasicUpstart(address) {
+    .word upstartEnd
+    .word 10
+    .byte $fe, $02, $30, $3a, $9e
+    .text toIntString(address)
+    .byte 0
+upstartEnd:
+    .word 0
+}
+.macro BasicUpstart2(address) {
+    * = $2001 "Basic"
+    BasicUpstart(address)
+    * = $2011 "Basic End"
+}
+"#;
+
 /// A PSID/RSID file.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Sid {

@@ -583,7 +583,8 @@ pub(crate) fn exec(e: &mut Engine<'_>, s: &Stmt) -> R {
         StmtKind::Align { kind, fill } => {
             let f = match fill {
                 Some(f) => e.eval_int(f).unwrap_or(0) as u8,
-                None if e.dialect() == Dialect::Acme && e.cpu.endian() == Endian::Little && !e.cpu.has_mnemonic("ld") => 0xea,
+                // ACME pads with NOPs (65xx)
+                None if e.dialect() == Dialect::Acme && matches!(e.cpu.info().id, "6502" | "6502ni" | "6510" | "2a03" | "6507" | "65c02" | "45gs02" | "65816") => 0xea,
                 None => 0,
             };
             let pc = i64::from(e.pc());

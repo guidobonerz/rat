@@ -299,3 +299,116 @@ fn m68000_all_opcode_words() {
 fn m68020_opcode_words() {
     m68k(true);
 }
+
+// ------------------------------------------------------------- 8080
+
+#[test]
+fn i8080_all_opcodes() {
+    let cpu = cpu_8080::I8080::new();
+    let dis = |b: &[u8]| {
+        let mut bus = emu_core::testing::FlatBus::new(16);
+        bus.load(ORG, b);
+        cpu.disassemble(&bus, ORG).to_string()
+    };
+    let mut rep = Report::new();
+    for op in 0..=255u8 {
+        let text = dis(&[op, 0x34, 0x12]);
+        if text.starts_with('*') {
+            continue; // undocumented NOPs
+        }
+        rep.check(&format!("${op:02x}"), &text, "", "8080", dis);
+    }
+    rep.finish("8080");
+}
+
+// ---------------------------------------------------------- TMS9900
+
+#[test]
+fn tms9900_all_opcode_words() {
+    let cpu = cpu_tms9900::Tms9900::new();
+    // TI writes hexadecimal as `>1234`
+    let dis = |b: &[u8]| cpu.disassemble(&Mem68(b.to_vec()), ORG).to_string().replace('>', "$");
+    let mut rep = Report::new();
+    for op in 0..=0xffffu32 {
+        let text = dis(&[(op >> 8) as u8, op as u8, 0x12, 0x34, 0x56, 0x78]);
+        if text.starts_with("DATA") {
+            continue;
+        }
+        rep.check(&format!("${op:04x}"), &text, "", "tms9900", dis);
+    }
+    rep.finish("tms9900");
+}
+
+// ----------------------------------------------------------- 45GS02
+
+/// The CPU's 16-bit view (addresses carry MAP flags above bit 15).
+struct Mem16(Vec<u8>);
+
+impl Bus for Mem16 {
+    fn read(&mut self, addr: u32, size: Size) -> u32 {
+        self.peek(addr, size)
+    }
+    fn peek(&self, addr: u32, _: Size) -> u32 {
+        u32::from(self.0.get(((addr & 0xffff).wrapping_sub(ORG) & 0xffff) as usize).copied().unwrap_or(0))
+    }
+    fn write(&mut self, _: u32, _: Size, _: u32) {}
+    fn addr_bits(&self) -> u8 {
+        28
+    }
+}
+
+#[test]
+fn m45gs02_all_opcodes_and_prefixes() {
+    let cpu = cpu_45gs02::Cpu45gs02::new();
+    let dis = |b: &[u8]| cpu.disassemble(&Mem16(b.to_vec()), ORG).to_string();
+    let mut rep = Report::new();
+    for op in 0..=255u8 {
+        // plain, Q (`42 42`), flat (`EA`), Q and flat
+        for b in [vec![op, 0x34, 0x12], vec![0x42, 0x42, op, 0x34, 0x12], vec![0xea, op, 0x34, 0x12], vec![0x42, 0x42, 0xea, op, 0x34]] {
+            let text = dis(&b);
+            rep.check(&format!("{b:02x?}"), &text, "", "45gs02", dis);
+        }
+    }
+    rep.finish("45gs02");
+}
+
+// -------------------------------------------------------------- ARM
+
+struct MemArm(Vec<u8>);
+
+impl Bus for MemArm {
+    fn read(&mut self, addr: u32, size: Size) -> u32 {
+        self.peek(addr, size)
+    }
+    fn peek(&self, addr: u32, _: Size) -> u32 {
+        let b = |a: u32| u32::from(self.0.get(a.wrapping_sub(ORG) as usize).copied().unwrap_or(0));
+        b(addr) | b(addr + 1) << 8 | b(addr + 2) << 16 | b(addr + 3) << 24
+    }
+    fn write(&mut self, _: u32, _: Size, _: u32) {}
+    fn addr_bits(&self) -> u8 {
+        26
+    }
+}
+
+#[test]
+fn arm2_instruction_words() {
+    let cpu = cpu_arm::Arm2::new();
+    // Acorn writes hexadecimal as `&1234`
+    let dis = |b: &[u8]| cpu.disassemble(&MemArm(b.to_vec()), ORG).to_string().replace('&', "$");
+    let mut rep = Report::new();
+    // every condition, class and flag combination (bits 31..20) with a
+    // spread of register, shift and offset fields
+    const LOW: [u32; 14] = [0x0_0000, 0x1_2003, 0x2_3145, 0x4_5fff, 0x3_1492, 0xf_e0d1, 0x5_60a7, 0x7_8f60, 0x9_a06b, 0x1_0e00, 0x6_7234, 0xe_d812, 0x8_00f0, 0x2_1ffc];
+    for top in 0..0x1000u32 {
+        for low in LOW {
+            let word = top << 20 | low;
+            let text = dis(&word.to_le_bytes());
+            // coprocessor and undefined space; an empty register list
+            if text.starts_with("CDP") || text.contains("{}") {
+                continue;
+            }
+            rep.check(&format!("${word:08x}"), &text, "", "arm2", dis);
+        }
+    }
+    rep.finish("arm2");
+}

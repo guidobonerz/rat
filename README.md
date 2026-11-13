@@ -8,15 +8,19 @@ API.
 | CPU | Variants | Byte order | Used by |
 |---|---|---|---|
 | MOS 6502 family | `6502` (with undocumented opcodes), `6502ni`, `6510`, `2a03`, `6507` | little | C64, C128, VIC-20, PET, C16/Plus/4, Atari 8-bit, 2600, NES, Apple II |
-| CMOS 65C02 | `65c02` (no Rockwell bit instructions, like mimic) | little | Apple IIe enhanced |
+| CMOS 65C02 | `65c02` (no Rockwell bit instructions, like mimic) | little | Apple IIe enhanced, BBC Master (65SC12) |
+| MEGA65 45GS02 | `45gs02` (4510/65CE02 with Q instructions, flat `[zp],z`, long branches) | little | MEGA65 |
 | WDC 65C816 | `65816` | little | SNES |
 | Sony SPC700 | `spc700` | little | SNES audio |
-| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ZX Spectrum, ColecoVision, C128 |
+| Zilog Z80 (incl. undocumented) | `z80` | little | Amstrad CPC, ZX81, ZX Spectrum, ColecoVision, MSX, TRS-80, C128 |
+| Intel 8080 | `8080` (Intel mnemonics) | little | IMSAI 8080 |
+| TI TMS9900 | `tms9900` | big | TI-99/4A |
+| ARM2 | `arm2` (26-bit, Acorn mnemonics) | little | Acorn Archimedes |
 | Motorola 6809 | `6809` | big | Vectrex |
 | Motorola 68000 / 68020 | `68000`, `68020` | big | Amiga 500…1200, Macintosh |
 
 The encoding tables are ported from mimic's cores. The tests check every
-opcode against mimic's disassemblers (about 68,000 instructions; see
+opcode against mimic's disassemblers (about 180,000 instructions; see
 [Testing](#testing)).
 
 ## Installation
@@ -160,6 +164,13 @@ sources start on `generic`.
 | `cpc` | z80 | amsdos | `amsdos name= exec=` |
 | `zx81` | z80 | p | |
 | `spectrum` | z80 | tap, sna | `tap name= exec= loader=` (BASIC loader `CLEAR/LOAD ""CODE/RANDOMIZE USR`), `sna exec= sp= border= im= ei=` |
+| `mega65` | 45gs02 | prg, d64 | `basicupstart` (BASIC 65 `BANK 0:SYS`), `disk`; `LoadSid()`, `LoadPicture()` |
+| `bbc`, `bbcmaster` | 6502, 65c02 | ssd (DFS disk with the program as a file) | `ssd name= exec= title= boot=` (`boot=true`: `!BOOT`, Shift+BREAK runs it) |
+| `msx` | z80 | bin (cartridge ROM), cas (`BLOAD"CAS:",R` file) | `msx.header init` (`AB` cartridge header), `cas name= exec=` |
+| `trs80` | z80 | cas (Level II `SYSTEM` tape), cmd (TRSDOS load module) | `cas name= exec=`, `cmd exec` |
+| `imsai` | 8080 | bin | |
+| `ti99` | tms9900 | bin (cartridge ROM at $6000) | `ti99.header "TITLE", start` (cartridge header with one menu entry) |
+| `archimedes` | arm2 | bin | |
 | `apple2`, `apple2e` | 6502, 65c02 | dsk (DOS 3.3 image with the program as a binary file; boot a DOS and `BRUN` it) | `dsk name= volume= type= locked=` |
 | `mac` | 68000 | bin | |
 | `coleco` | z80 | bin | `coleco.header start` |
@@ -235,10 +246,13 @@ assembles to identical bytes.
   modifiers, `createFile`, and label arrays of loops (`loop[i].label`)
   are not supported. The `dtv` CPU is missing because mimic does not
   emulate it.
-* `!cpu 65ce02` / `4502` (ACME) are not available, for the same reason.
-  `65c02` has no Rockwell/WDC bit instructions (`RMB`, `SMB`, `BBR`,
+* `65c02` has no Rockwell/WDC bit instructions (`RMB`, `SMB`, `BBR`,
   `BBS`, `STP`, `WAI`), as mimic's 65C02 (the NCR/GTE part of the
   Apple IIe).
+* There is no separate 4510 or 65CE02 CPU: `!cpu 65ce02`, `4510` and
+  `4502` select the 45GS02, a superset of both.
+* Archimedes, TI-99/4A and IMSAI output is raw code (`bin`, `hex`,
+  `srec`): there is no RISC OS ADFS image, TI disk or cassette writer.
 * Macintosh output is raw code (`bin`, `hex`, `srec`); there is no
   resource-fork or MFS disk writer.
 * Converting KickAssembler script code (lists, structs, functions,
@@ -252,7 +266,7 @@ crates/
   rat-cpu       CPU backends (encoder + disassembler per CPU)
   rat-syntax    ACME and Kick/rat parsers → shared IR
   rat-platform  platform registry, Commodore preludes, SID/picture loading
-  rat-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, tap, sna, dsk, hex, srec, symbol files
+  rat-output    prg, xex, nes, sfc, a26, p, amsdos, hunk, crt, d64, tap, sna, dsk, ssd, cas, cmd, hex, srec, symbol files
   rat-asm       the multi-pass engine, script values, converter
   rat-server    REST API
   rat-cli       the `rat` binary
@@ -275,13 +289,16 @@ cargo test --workspace --release
 ```
 
 * **Round trips against mimic.** `tests/tests/roundtrip.rs` takes every
-  6502, 65C02, 65816 (all M/X widths), SPC700, Z80 (all prefix pages) and 6809
-  opcode (all postbytes), plus every 68000 opcode word and a third of the
-  68020 space. Each one is disassembled with mimic's disassembler,
+  6502, 65C02, 45GS02 (plain, Q, flat and Q+flat), 65816 (all M/X widths),
+  SPC700, 8080, Z80 (all prefix pages) and 6809 opcode (all postbytes),
+  every 68000 and TMS9900 opcode word, a third of the 68020 space and
+  every ARM2 condition/class/flag combination with a spread of operand
+  fields. Each one is disassembled with mimic's disassembler,
   assembled with rat, disassembled again and compared. The comparison is
   on text, so it accepts equivalent encodings.
 * **Corpus.** `tests/tests/corpus.rs` assembles C64, ACME, Kick script,
   CPC, Vectrex, NES, SNES (with SPC700), Atari 8-bit, 2600 and Amiga
-  sources against golden outputs, and checks conversion to every dialect.
+  sources, and MEGA65, BBC, MSX, TRS-80, IMSAI, TI-99/4A and Archimedes
+  sources, against golden outputs, and checks conversion to every dialect.
 * **REST.** `rat-server` has tests for JSON and multipart assembly,
   disassembly, conversion and the OpenAPI document.

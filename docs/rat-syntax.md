@@ -115,7 +115,7 @@ written. Use `.for i in a..b`, or `.while` with `.eval`.
 
 | Directive | |
 |---|---|
-| `.cpu 6502\|6502ni\|6510\|2a03\|6507\|65c02\|65816\|spc700\|z80\|6809\|68000\|68020` | change the CPU |
+| `.cpu 6502\|6502ni\|6510\|2a03\|6507\|65c02\|45gs02\|65816\|spc700\|z80\|8080\|6809\|68000\|68020\|tms9900\|arm2` | change the CPU |
 | `.platform name [{ … }]` | change the platform; also selects its CPU |
 | `.a8 .a16 .i8 .i16` | 65816 register widths |
 | `.setdp page` | 6809 direct page; 65816 assumed D register |
@@ -136,8 +136,12 @@ Operands always use the CPU's native syntax.
 | CPU | Examples |
 |---|---|
 | 65xx | `lda #<x`, `lda (zp),y`, `sta $1234,x`. Force a size with `lda.z` / `lda.a` (ACME: `lda+1` / `lda+2`) |
+| 45GS02 | `lda ($10),z`, `sta [$10],z` (flat), `ldq $1234`, `adcq ($10)`, `lda ($10,sp),y`, `bbr3 $10,label`, `lbne label` (16-bit; `bne` grows by itself), `phw #$1234`, `neg a`, `map`, `eom` |
 | 65816 | `lda [dp],y`, `lda $12,s`, `lda ($12,s),y`, `jml $123456`, `mvn $7e,$00`, `lda.l`, `pea #x` |
 | SPC700 | `mov a,!abs+x`, `mov a,[dp+x]`, `mov a,[dp]+y`, `mov (x)+,a`, `set1 dp.3`, `mov1 c,abs.5`, `bbs dp.2,label`, `mov dst,src` |
 | Z80 | `ld a,(ix+5)`, `ld (iy-2),$12`, `res 3,(ix+1),b`, `out (c),0`, `ex af,af'`, `ixh`/`ixl`, `sll` |
+| 8080 | `mvi a,$2a`, `lxi h,table`, `mov m,a`, `push psw`, `jnz loop`, `rst 7`, `in $ff` |
+| TMS9900 | `li r1,$1234`, `mov *r1+,@$8c00`, `movb @table(r2),r3`, `ai r1,2`, `sla r3,4`, `jne loop`, `blwp @vector`, `rt` (numbers in rat syntax: `$8c00`, not `>8C00`) |
+| ARM2 | `addeqs r0,r1,r2,lsl #2`, `ldrb r0,[r1],#1`, `ldr r0,[r1,-r2]!`, `stmfd r13!,{r0-r3,r14}`, `ldmfd sp!,{pc}^`, `teqp pc,#0`, `bl label`, `swi $11`, `adr r0,label`, `ldr r0,label`; an immediate that does not encode is tried as MVN/BIC/SUB/CMN |
 | 6809 | `lda <$20` (direct), `lda >$1234` (extended), `ldd ,x++`, `lda [,y]`, `leax 10,x`, `ldy label,pcr`, `pshs a,b,x` |
 | 68000/68020 | `move.l #1,d0`, `lea 4(a0,d1.w*2),a1`, `(d16,pc)`, `movem.l d0-d7/a0-a6,-(sp)`, `bra.s`, `$dff180.l`, `([bd,a0],d1.w*4,od)`, `bfextu d0{4:8},d1` |

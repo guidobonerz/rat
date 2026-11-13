@@ -1,0 +1,29 @@
+; IMSAI 8080: count on the programmed output lamps (port $FF)
+.platform imsai
+.org $0100
+start:  lxi sp, stack
+        mvi a, 0
+loop:   cma
+        out $ff
+        cma
+        inr a
+        push psw
+        lxi b, $4000
+delay:  dcx b
+        mov a, b
+        ora c
+        jnz delay
+        pop psw
+        in $ff                  ; sense switches
+        ani $80
+        jz loop
+        call wait
+        jmp loop
+wait:   lhld count
+        inx h
+        shld count
+        rnz
+        ret
+count:  .word 0
+        .res 32
+stack:

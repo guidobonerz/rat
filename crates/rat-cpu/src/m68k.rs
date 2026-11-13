@@ -572,6 +572,10 @@ impl Cpu for M68k {
         Endian::Big
     }
 
+    fn unit(&self) -> usize {
+        2
+    }
+
     fn has_mnemonic(&self, m: &str) -> bool {
         let m = m.to_ascii_lowercase();
         if BASE_MNEMONICS.contains(&m.as_str()) || (self.m020 && M020_MNEMONICS.contains(&m.as_str())) {

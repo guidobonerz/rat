@@ -1,11 +1,13 @@
 //! Output file writers. Pure functions from memory images to bytes; the
 //! assembler decides what goes where.
 
+pub mod bbc;
 pub mod d64;
 pub mod dos33;
 pub mod formats;
 pub mod spectrum;
 pub mod symbols;
+pub mod tape;
 
 pub use formats::*;
 
@@ -73,6 +75,12 @@ pub enum Format {
     Sna,
     /// Apple II DOS 3.3 disk image.
     Dsk,
+    /// BBC Micro DFS disk image.
+    Ssd,
+    /// Cassette image (MSX, TRS-80).
+    Cas,
+    /// TRS-80 /CMD load module.
+    Cmd,
     /// Intel HEX.
     Hex,
     /// Motorola S-records.
@@ -80,7 +88,7 @@ pub enum Format {
 }
 
 impl Format {
-    pub const ALL: [Format; 16] = [
+    pub const ALL: [Format; 19] = [
         Format::Bin,
         Format::Prg,
         Format::Xex,
@@ -95,6 +103,9 @@ impl Format {
         Format::Tap,
         Format::Sna,
         Format::Dsk,
+        Format::Ssd,
+        Format::Cas,
+        Format::Cmd,
         Format::Hex,
         Format::Srec,
     ];
@@ -115,6 +126,9 @@ impl Format {
             Format::Tap => "tap",
             Format::Sna => "sna",
             Format::Dsk => "dsk",
+            Format::Ssd => "ssd",
+            Format::Cas => "cas",
+            Format::Cmd => "cmd",
             Format::Hex => "hex",
             Format::Srec => "srec",
         }
@@ -146,6 +160,9 @@ impl Format {
             Format::Tap => "ZX Spectrum tape (CODE block, optional BASIC loader)",
             Format::Sna => "ZX Spectrum 48K snapshot (starts at the entry point)",
             Format::Dsk => "Apple II DOS 3.3 disk image with the program as a binary file",
+            Format::Ssd => "BBC Micro DFS disk image (40 tracks) with the program as a file",
+            Format::Cas => "cassette image: MSX BLOAD file, TRS-80 SYSTEM tape",
+            Format::Cmd => "TRS-80 /CMD load module",
             Format::Hex => "Intel HEX",
             Format::Srec => "Motorola S-records",
         }
@@ -167,6 +184,9 @@ impl Format {
             "tap" | "zxtap" => Format::Tap,
             "sna" | "snapshot" => Format::Sna,
             "dsk" | "do" | "dos33" => Format::Dsk,
+            "ssd" | "dfs" => Format::Ssd,
+            "cas" => Format::Cas,
+            "cmd" => Format::Cmd,
             "hex" | "ihex" | "intel" => Format::Hex,
             "srec" | "s19" | "s28" | "s37" | "mot" => Format::Srec,
             _ => return None,

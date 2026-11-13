@@ -193,6 +193,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
+name = "chips-acorn"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
 name = "chips-amstrad"
 version = "0.1.0"
 dependencies = [
@@ -271,6 +278,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 
 [[package]]
+name = "cpu-45gs02"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
 name = "cpu-6502"
 version = "0.1.0"
 dependencies = [
@@ -292,6 +306,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cpu-8080"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
+name = "cpu-arm"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
 name = "cpu-m68k"
 version = "0.1.0"
 dependencies = [
@@ -300,6 +328,13 @@ dependencies = [
 
 [[package]]
 name = "cpu-spc700"
+version = "0.1.0"
+dependencies = [
+ "emu-core",
+]
+
+[[package]]
+name = "cpu-tms9900"
 version = "0.1.0"
 dependencies = [
  "emu-core",
@@ -743,6 +778,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 name = "machine-spectrum"
 version = "0.1.0"
 dependencies = [
+ "chips-acorn",
  "chips-amstrad",
  "chips-sinclair",
  "cpu-z80",
@@ -763,6 +799,7 @@ name = "media"
 version = "0.1.0"
 dependencies = [
  "emu-core",
+ "flate2",
 ]
 
 [[package]]
@@ -1020,11 +1057,15 @@ dependencies = [
 name = "rat-tests"
 version = "0.1.0"
 dependencies = [
+ "cpu-45gs02",
  "cpu-6502",
  "cpu-65816",
  "cpu-6809",
+ "cpu-8080",
+ "cpu-arm",
  "cpu-m68k",
  "cpu-spc700",
+ "cpu-tms9900",
  "cpu-z80",
  "emu-core",
  "machine-spectrum",

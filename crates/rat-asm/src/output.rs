@@ -185,6 +185,25 @@ impl Engine<'_> {
                 }
                 rat_output::dos33::dsk(chunks, fill, &o)?
             }
+            Format::Ssd => {
+                let mut o = self.plat.ssd.clone().unwrap_or_default();
+                if o.name.is_empty() {
+                    o.name = base_name(name).to_uppercase().chars().take(7).collect();
+                }
+                rat_output::bbc::ssd(chunks, fill, &o)?
+            }
+            Format::Cas => {
+                let mut o = self.plat.cas.clone().unwrap_or_default();
+                if o.name.is_empty() {
+                    o.name = base_name(name).to_uppercase().chars().take(6).collect();
+                }
+                if self.platform.id == "trs80" {
+                    rat_output::tape::trs80_system(chunks, &o)?
+                } else {
+                    rat_output::tape::msx_cas(chunks, fill, &o)?
+                }
+            }
+            Format::Cmd => rat_output::tape::trs80_cmd(chunks, self.plat.cmd_exec.or(self.plat.cas.as_ref().and_then(|c| c.exec)))?,
             Format::Hunk => return Err("internal: hunk output is built by the driver".into()),
         })
     }

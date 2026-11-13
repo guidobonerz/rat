@@ -745,8 +745,9 @@ impl<'a> Printer<'a> {
             let t = &toks[i];
             let mut piece = None;
             let mut adv = 1;
-            // ACME/rat `.local` / `@cheap`
-            if (t.is_punct(".") || t.is_punct("@")) && i + 1 < n && !toks[i + 1].space_before && start_pos(i) || (t.is_punct(".") || t.is_punct("@")) && i + 1 < n && !toks[i + 1].space_before && i > 0 && toks[i].space_before {
+            // ACME/rat `.local` / `@cheap` (the TMS9900's `@addr` is an addressing mode)
+            let at_mode = t.is_punct("@") && self.cpu.info().id == "tms9900";
+            if !at_mode && (t.is_punct(".") || t.is_punct("@")) && i + 1 < n && !toks[i + 1].space_before && (start_pos(i) || i > 0 && toks[i].space_before) {
                 if let Tok::Ident(s) = &toks[i + 1].tok {
                     if self.from != Dialect::Kick {
                         let kind = if t.is_punct("@") || self.from == Dialect::Rat { NameKind::Cheap } else { NameKind::ZoneLocal };
@@ -843,7 +844,7 @@ impl<'a> Printer<'a> {
     fn suffix(&self, m: &str, sfx: Option<&str>) -> String {
         let Some(s) = sfx else { return String::new() };
         let id = self.cpu.info().id;
-        let is65 = matches!(id, "6502" | "6502ni" | "6510" | "2a03" | "6507" | "65816") && self.cpu.has_mnemonic(m);
+        let is65 = matches!(id, "6502" | "6502ni" | "6510" | "2a03" | "6507" | "65c02" | "45gs02" | "65816") && self.cpu.has_mnemonic(m);
         let l = s.to_ascii_lowercase();
         if is65 {
             let size = match l.as_str() {

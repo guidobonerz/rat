@@ -1,0 +1,44 @@
+; MEGA65: 45GS02 with Q instructions, flat pointers and long branches
+.platform mega65
+.basicupstart start
+
+.const SCREEN = $0800
+ptr = $fb
+
+start:  lda #$47                ; enable the VIC-IV registers
+        sta $d02f
+        lda #$53
+        sta $d02f
+        ldz #0
+        lda #<SCREEN
+        sta ptr
+        lda #>SCREEN
+        sta ptr+1
+        lda #0
+        sta ptr+2
+        sta ptr+3
+@loop:  lda text,x
+        beq @done
+        sta [ptr],z             ; flat 32-bit pointer
+        inz
+        inx
+        bra @loop
+@done:  ldq counter             ; Q = Z:Y:X:A
+        inq
+        stq counter
+        adcq (ptr)
+        phw #start
+        bbs7 ptr, @done
+        lbne far                ; 16-bit branch
+        rts
+counter: .dword 0
+text:   .screen "hello mega65"
+        .byte 0
+        .fill 300, 0
+far:    neg a
+        asr a
+        lda ($10,sp),y
+        tab
+        map
+        eom
+        rts

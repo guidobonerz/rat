@@ -1,7 +1,8 @@
 //! CPU backends: instruction encoders and disassemblers.
 //!
 //! Every backend parses its own native operand syntax from tokens (Zilog
-//! for Z80, Motorola for 6809/68k, Sony for SPC700, MOS for the 65xx), so
+//! for Z80, Intel for the 8080, Motorola for 6809/68k, Sony for SPC700,
+//! MOS for the 65xx, TI for the TMS9900, Acorn for ARM), so
 //! the same CPU works under every source dialect. Expressions inside an
 //! operand are parsed and evaluated by the assembler through
 //! [`OperandCtx`], which knows the dialect and the symbol table.
@@ -12,11 +13,15 @@
 
 use rat_core::{Endian, Tok, Token};
 
+pub mod arm;
+pub mod i8080;
+pub mod m45gs02;
 pub mod m6809;
 pub mod m68k;
 mod m68k_dis;
 pub mod mos6502;
 pub mod spc700;
+pub mod tms9900;
 pub mod w65816;
 pub mod z80;
 mod util;
@@ -91,6 +96,11 @@ pub struct CpuInfo {
 pub trait Cpu: Send + Sync {
     fn info(&self) -> CpuInfo;
     fn endian(&self) -> Endian;
+    /// Size of an instruction word in bytes: instructions are a multiple
+    /// of it and aligned to it (2 on the 68000 and TMS9900, 4 on ARM).
+    fn unit(&self) -> usize {
+        1
+    }
     fn has_mnemonic(&self, m: &str) -> bool;
     fn mnemonics(&self) -> Vec<String>;
     /// Encode one instruction. `Err` is a hard error (bad syntax).
@@ -130,12 +140,16 @@ cpus! {
     "2a03" => mos6502::Mos6502::new(mos6502::Variant::Ricoh2a03),
     "6507" => mos6502::Mos6502::new(mos6502::Variant::M6507),
     "65c02" => mos6502::Mos6502::new(mos6502::Variant::Cmos65c02),
+    "45gs02" => m45gs02::M45gs02::new(),
     "65816" => w65816::W65816::new(),
     "spc700" => spc700::Spc700::new(),
     "z80" => z80::Z80::new(),
+    "8080" => i8080::I8080::new(),
     "6809" => m6809::M6809::new(),
     "68000" => m68k::M68k::new(false),
     "68020" => m68k::M68k::new(true),
+    "tms9900" => tms9900::Tms9900::new(),
+    "arm2" => arm::Arm2::new(),
 }
 
 /// Map alias spellings (ACME `!cpu`, Kick `.cpu`) to an id.
@@ -148,13 +162,17 @@ fn canonical(name: &str) -> Option<&'static str> {
         "6510" | "nmos6510" => "6510",
         "2a03" | "2a07" | "rp2a03" | "nes" | "ricoh" => "2a03",
         "6507" => "6507",
-        "65c02" | "65sc02" | "w65c02" | "w65c02s" | "g65sc02" | "r65c02" | "cmos6502" | "cmos" => "65c02",
+        "65c02" | "65sc02" | "w65c02" | "w65c02s" | "g65sc02" | "r65c02" | "cmos6502" | "cmos" | "65sc12" => "65c02",
+        "45gs02" | "4510" | "csg4510" | "65ce02" | "4502" | "m65" | "mega65" => "45gs02",
         "65816" | "65c816" | "w65c816" | "5a22" | "wdc65816" => "65816",
         "spc700" | "spc" | "spc700sony" => "spc700",
         "z80" | "zilogz80" | "z80undoc" => "z80",
         "6809" | "68a09" | "mc6809" | "m6809" | "68b09" => "6809",
         "68000" | "68k" | "m68k" | "mc68000" | "68010" => "68000",
         "68020" | "68ec020" | "mc68020" | "020" => "68020",
+        "8080" | "i8080" | "8080a" | "intel8080" => "8080",
+        "tms9900" | "9900" | "tms9900a" => "tms9900",
+        "arm2" | "arm" | "arm26" | "arm3" | "arm250" => "arm2",
         _ => return None,
     })
 }
